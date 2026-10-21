@@ -328,7 +328,15 @@ class AutonomousRunner:
 
     def _dispatch_task(self, task: dict, all_tasks: List[dict]) -> None:
         tid = task["id"]
-        engine = task.get("engine", "coder_worker")
+        engine = task.get("engine")
+        if not engine or engine == "auto":
+            from run.cao_laya_router import LayaRouter
+            route_res = LayaRouter.route_task(f"{task.get('title', '')} {task.get('detail', '')}")
+            engine = route_res["worker"]
+            task["engine"] = engine
+            if not task.get("model"):
+                task["model"] = route_res["model"]
+
         model = task.get("model")
 
         # TokenMaster Evaluation Gate: Proactive Quota & Context Sizing
@@ -353,9 +361,16 @@ class AutonomousRunner:
 
         # Hermes Pre-Task Recall Gate: Query memory for relevant past lessons
         query_text = f"{task.get('title', '')} {' '.join(task.get('files', []))} {task.get('detail', '')}".strip()
-        from run.cao_memory import query_memory
+        from run.cao_memory import query_memory, get_fleet_db_path
         db_path = self.repo_root / "wcao" / "memory.sqlite"
-        memories = query_memory(query_text, limit=3, db_path=db_path) if db_path.exists() else []
+        memories = query_memory(query_text, limit=2, db_path=db_path) if db_path.exists() else []
+        fleet_db = get_fleet_db_path()
+        if fleet_db.exists():
+            try:
+                fleet_mems = query_memory(query_text, limit=2, db_path=fleet_db)
+                memories.extend(fleet_mems)
+            except Exception:
+                pass
         if memories:
             mem_lines = ["--- Inherited Project Knowledge (Hermes Memory) ---"]
             for m in memories:

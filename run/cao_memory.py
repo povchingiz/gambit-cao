@@ -19,8 +19,17 @@ def get_default_db_path() -> Path:
     return wcao / "memory.sqlite"
 
 
-def get_connection(db_path: Optional[Path] = None) -> sqlite3.Connection:
-    path = db_path or get_default_db_path()
+def get_fleet_db_path() -> Path:
+    cao_dir = Path.home() / ".cao"
+    cao_dir.mkdir(parents=True, exist_ok=True)
+    return cao_dir / "fleet_memory.sqlite"
+
+
+def get_connection(db_path: Optional[Path] = None, fleet: bool = False) -> sqlite3.Connection:
+    if fleet and db_path is None:
+        path = get_fleet_db_path()
+    else:
+        path = db_path or get_default_db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(path))
     conn.row_factory = sqlite3.Row
@@ -49,9 +58,10 @@ def store_memory(
     file_paths: str = "",
     session_id: str = "default",
     db_path: Optional[Path] = None,
+    fleet: bool = False,
 ) -> int:
     """Store an episodic memory entry into the FTS5 database."""
-    conn = get_connection(db_path)
+    conn = get_connection(db_path, fleet=fleet)
     now_iso = datetime.now(timezone.utc).isoformat()
     with conn:
         cursor = conn.execute(
@@ -84,9 +94,10 @@ def query_memory(
     category: Optional[str] = None,
     limit: int = 10,
     db_path: Optional[Path] = None,
+    fleet: bool = False,
 ) -> List[Dict[str, Any]]:
     """Query memories using FTS5 match."""
-    conn = get_connection(db_path)
+    conn = get_connection(db_path, fleet=fleet)
     fts_query = _sanitize_fts_query(query_text)
     if not fts_query:
         return []
@@ -143,9 +154,13 @@ def query_memory(
         return [dict(r) for r in cursor.fetchall()]
 
 
-def list_memories(limit: int = 20, db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
+def list_memories(
+    limit: int = 20,
+    db_path: Optional[Path] = None,
+    fleet: bool = False,
+) -> List[Dict[str, Any]]:
     """List recent memories."""
-    conn = get_connection(db_path)
+    conn = get_connection(db_path, fleet=fleet)
     cursor = conn.execute(
         """
         SELECT rowid, session_id, category, summary, details, file_paths, created_at, 0 as rank

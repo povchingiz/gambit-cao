@@ -55,7 +55,7 @@ command -v tmux >/dev/null 2>&1 && ok "tmux present" || bad "tmux missing (CAO's
 # The cao-* tools on PATH should be THIS repo's scripts (bootstrap symlinks them).
 # A stale copy (from an older `cp`-based install) silently runs old behavior —
 # catch that here instead of leaving you puzzled why a new flag "doesn't work".
-for tool in cao-run cao-doctor cao-stop cao-tokens cao-plugins cao-limits cao-monitor cao-aggressive cao-auto; do
+for tool in cao-run cao-doctor cao-stop cao-tokens cao-plugins cao-limits cao-monitor cao-aggressive cao-auto cao-plan cao-memory cao-config cao-update cao-laya cao-fleet cao-sandbox; do
   onpath="$(command -v "$tool" 2>/dev/null)" || { wrn "$tool not on PATH (run bootstrap.sh)"; continue; }
   if [ "$onpath" -ef "$RUN_DIR/$tool" ]; then
     :  # same file (symlink or direct) — fresh
@@ -185,7 +185,11 @@ if [ "$DEEP" = 1 ]; then
     wrn "daemon not running on :$SERVER_PORT — start it with cao-run, or skip --deep"
   else
     SMOKE="doctor-smoke-$$"
-    SMOKE_PROVIDER="${CAO_SUPERVISOR_PROVIDER:-claude_code}"
+    SMOKE_PROVIDER="${CAO_SUPERVISOR_PROVIDER:-}"
+    if [ -z "$SMOKE_PROVIDER" ] && [ -f "$HINT_FILE" ] && [ -s "$HINT_FILE" ]; then
+      SMOKE_PROVIDER="$(tr -d '[:space:]' < "$HINT_FILE")"
+    fi
+    SMOKE_PROVIDER="${SMOKE_PROVIDER:-claude_code}"
     code="$(curl -s -o /tmp/cao-doctor-smoke.$$ -w '%{http_code}' -m 90 -X POST \
       "http://127.0.0.1:$SERVER_PORT/sessions?agent_profile=code_supervisor&working_directory=$PWD&provider=$SMOKE_PROVIDER&session_name=$SMOKE&allowed_tools=%2A" 2>/dev/null)"
     case "$code" in

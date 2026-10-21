@@ -107,7 +107,7 @@ log "Re-applying CAO site-packages patches..."
 # ---------------------------------------------------------------------------
 log "Refreshing ~/.local/bin symlinks..."
 mkdir -p "$HOME/.local/bin"
-for tool in cao-run cao-doctor cao-patch cao-stop cao-tokens cao-plugins cao-limits cao-monitor cao-aggressive cao-auto cao-plan cao-memory cao-config cao-update; do
+for tool in cao-run cao-doctor cao-patch cao-stop cao-tokens cao-plugins cao-limits cao-monitor cao-aggressive cao-auto cao-plan cao-memory cao-config cao-update cao-laya cao-fleet cao-sandbox; do
   if [ -f "$REPO/run/$tool" ]; then
     ln -sfn "$REPO/run/$tool" "$HOME/.local/bin/$tool"
     chmod +x "$REPO/run/$tool"

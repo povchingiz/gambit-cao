@@ -28,6 +28,7 @@ def main():
     p_query.add_argument("query", help="Search query string")
     p_query.add_argument("--category", "-c", help="Filter by category")
     p_query.add_argument("--limit", "-n", type=int, default=10, help="Maximum results (default: 10)")
+    p_query.add_argument("--fleet", action="store_true", help="Search global fleet memory (~/.cao/fleet_memory.sqlite)")
 
     # store
     p_store = subparsers.add_parser("store", help="Store a memory entry")
@@ -36,17 +37,20 @@ def main():
     p_store.add_argument("--details", "-d", default="", help="Detailed memory or solution context")
     p_store.add_argument("--files", "-f", default="", help="Associated file paths")
     p_store.add_argument("--session", default="manual", help="Session ID")
+    p_store.add_argument("--fleet", action="store_true", help="Store into global fleet memory (~/.cao/fleet_memory.sqlite)")
 
     # list
     p_list = subparsers.add_parser("list", help="List recent memories")
     p_list.add_argument("--limit", "-n", type=int, default=15, help="Maximum entries to list")
+    p_list.add_argument("--fleet", action="store_true", help="List from global fleet memory (~/.cao/fleet_memory.sqlite)")
 
     args = parser.parse_args()
 
     if args.subcommand in ("query", "recall"):
-        results = query_memory(args.query, category=args.category, limit=args.limit)
+        results = query_memory(args.query, category=args.category, limit=args.limit, fleet=args.fleet)
         if not results:
-            print(f"No memories matched '{args.query}'.")
+            target_desc = "fleet memory (~/.cao/fleet_memory.sqlite)" if args.fleet else "wcao/memory.sqlite"
+            print(f"No memories matched '{args.query}' in {target_desc}.")
             return
         print(f"Found {len(results)} memory match(es):")
         for r in results:
@@ -63,13 +67,16 @@ def main():
             details=args.details,
             file_paths=args.files,
             session_id=args.session,
+            fleet=args.fleet,
         )
-        print(f"✓ Stored memory entry #{rowid} in wcao/memory.sqlite")
+        target_desc = "~/.cao/fleet_memory.sqlite" if args.fleet else "wcao/memory.sqlite"
+        print(f"✓ Stored memory entry #{rowid} in {target_desc}")
 
     elif args.subcommand == "list":
-        results = list_memories(limit=args.limit)
+        results = list_memories(limit=args.limit, fleet=args.fleet)
         if not results:
-            print("No memories recorded yet.")
+            target_desc = "fleet memory" if args.fleet else "wcao/memory.sqlite"
+            print(f"No memories recorded yet in {target_desc}.")
             return
         print(f"Recent {len(results)} memory entry(ies):")
         for r in results:

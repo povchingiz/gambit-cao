@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""cao-sandbox — Git Worktree Sandbox CLI for Worker Isolation.
+
+Usage:
+  cao-sandbox create <worker_name> [--base <branch>]
+  cao-sandbox cleanup <worker_name>
+  cao-sandbox merge <worker_name> [--target <branch>] [--no-squash] [-m <message>]
+  cao-sandbox list
+  cao-sandbox -h | --help
+"""
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
+from cao_worktree import WorktreeManager
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print(__doc__.strip())
+        sys.exit(0)
+
+    mgr = WorktreeManager()
+    cmd = sys.argv[1]
+
+    if cmd == "list":
+        boxes = mgr.list_sandboxes()
+        if not boxes:
+            print("No active worktree sandboxes found.")
+        else:
+            print(f"{'WORKER':<20} | {'BRANCH':<30} | {'PATH'}")
+            print("-" * 75)
+            for b in boxes:
+                print(f"{b['worker']:<20} | {b['branch']:<30} | {b['path']}")
+
+    elif cmd == "create":
+        if len(sys.argv) < 3:
+            print("Usage: cao-sandbox create <worker_name> [--base <branch>]", file=sys.stderr)
+            sys.exit(1)
+        worker = sys.argv[2]
+        base = None
+        if len(sys.argv) >= 5 and sys.argv[3] == "--base":
+            base = sys.argv[4]
+        try:
+            path = mgr.create_sandbox(worker, base_branch=base)
+            print(f"✓ Created sandbox worktree for '{worker}' at: {path}")
+        except Exception as e:
+            print(f"Error creating sandbox: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif cmd == "cleanup":
+        if len(sys.argv) < 3:
+            print("Usage: cao-sandbox cleanup <worker_name>", file=sys.stderr)
+            sys.exit(1)
+        worker = sys.argv[2]
+        try:
+            mgr.remove_sandbox(worker)
+            print(f"✓ Cleaned up sandbox for '{worker}'")
+        except Exception as e:
+            print(f"Error cleaning up sandbox: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif cmd == "merge":
+        if len(sys.argv) < 3:
+            print("Usage: cao-sandbox merge <worker_name> [--target <branch>] [--no-squash] [-m <message>]", file=sys.stderr)
+            sys.exit(1)
+        worker = sys.argv[2]
+        target = None
+        squash = "--no-squash" not in sys.argv
+        msg = None
+        args = sys.argv[3:]
+        i = 0
+        while i < len(args):
+            if args[i] == "--target" and i + 1 < len(args):
+                target = args[i + 1]
+                i += 2
+            elif args[i] == "-m" and i + 1 < len(args):
+                msg = args[i + 1]
+                i += 2
+            else:
+                i += 1
+        try:
+            mgr.merge_sandbox(worker, target_branch=target, squash=squash, commit_message=msg)
+            print(f"✓ Successfully merged sandbox '{worker}' into {target or 'active branch'}")
+        except Exception as e:
+            print(f"Error merging sandbox: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    else:
+        print(f"Unknown command '{cmd}'. Use 'create', 'cleanup', 'merge', or 'list'.", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

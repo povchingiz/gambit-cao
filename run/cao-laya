@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""cao-laya — Laya System-1 Intent, Model & Risk Routing Engine.
+
+Usage:
+  cao-laya route "<task description>" [--context "<project>"] [--json]
+  cao-laya gate "<tool_name>" "<tool_args>" [--json]
+"""
+import json
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
+from cao_laya_router import LayaRouter
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print(__doc__.strip())
+        sys.exit(0)
+
+    as_json = "--json" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--json"]
+
+    cmd = args[0]
+    if cmd == "route":
+        # Extract --context if provided
+        context = ""
+        filtered_args = []
+        i = 1
+        while i < len(args):
+            if args[i] == "--context" and i + 1 < len(args):
+                context = args[i + 1]
+                i += 2
+            else:
+                filtered_args.append(args[i])
+                i += 1
+
+        task_text = " ".join(filtered_args)
+        res = LayaRouter.route_task(task_text, project_context=context)
+        if as_json:
+            print(json.dumps(res, indent=2))
+        else:
+            print(f"🎯 Worker:     {res['worker']} ({res['provider']})")
+            print(f"🧠 Model:      {res['model']}")
+            print(f"📊 Confidence: {res['confidence'] * 100:.0f}% [{res['category']}]")
+            print(f"💡 Rationale:  {res['rationale']}")
+    elif cmd == "gate":
+        tool = args[1] if len(args) > 1 else ""
+        tool_args = " ".join(args[2:]) if len(args) > 2 else ""
+        res = LayaRouter.evaluate_risk(tool, tool_args)
+        if as_json:
+            print(json.dumps(res, indent=2))
+        else:
+            status = "✓ AUTO-APPROVED" if res["auto_approved"] else "⚠ ESCALATE TO OPERATOR"
+            print(f"Risk Tier:  {res['risk_tier']} (Score: {res['risk_score']}/10)")
+            print(f"Decision:   {status}")
+            print(f"Reason:     {res['reason']}")
+    else:
+        print(f"Unknown command '{cmd}'. Use 'route' or 'gate'.", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

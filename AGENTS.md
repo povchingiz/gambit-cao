@@ -77,11 +77,14 @@ All AI agents operating in this repository MUST follow these rules:
 | `run/cao-auto "<goal>"` | Run autonomous headless DAG pipeline with self-healing |
 | `run/cao-stop` | Cleanly terminate orchestrator daemon and background panes |
 | `run/cao-tokens` | Telemetry report: token consumption per worker and model |
+| `run/cao-fleet` | Workstation Fleet Conductor: cross-project status, inspect, and dispatch |
+| `run/cao-laya` | Laya System-1 reflex router: task-to-worker mapping & anti-babysitting gate |
+| `run/cao-sandbox` | Ephemeral git worktree sandbox creation, testing, and squash-merge |
 | `run/cao-limits` | TokenMaster quota sensor: remaining requests & reset windows |
 | `run/cao-monitor` | Live terminal task board viewer |
 | `run/cao-aggressive` | Run 5-vector audit gate and generate `stress-test.sh` |
 | `./setup/3_apply/apply.sh` | Compile configs & register worker profiles with CAO daemon |
-| `uv run --with pytest pytest tests/` | Execute orchestrator test suite (56 unit & integration tests) |
+| `uv run --with pytest pytest tests/` | Execute orchestrator test suite (68 unit & integration tests) |
 
 ---
 

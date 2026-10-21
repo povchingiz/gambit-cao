@@ -1,8 +1,19 @@
 # now.md — wcao · active focus
 
-> **Branch:** `master`
-> **Active Plan:** [`2026-10-02-zero-stumble-onboarding.md`](2026-10-02-zero-stumble-onboarding.md)
+> **Branch:** `1000x`
+> **Active Plan:** 1000x Workstation Fleet Conductor & Laya Routing Engine
 > **Rule:** NEVER run `git push` without explicit user confirmation.
+
+---
+
+## ✅ What's Done (Milestone 1000x: Fleet Conductor & Sandboxes)
+
+- **Workstation Fleet Conductor (`cao-fleet`)**: Live multi-project status tracking, task inspection, and cross-project dispatching across `llmaas`, `3DAang`, `nowait-study`, `dycom-demo`, and `cao-crew` (`run/cao_fleet.py`, `run/cao-fleet`, `tests/test_fleet.py`).
+- **Laya System-1 Intent & Risk Router (`cao-laya`)**: Zero-overhead rule-based intent router mapping tasks to optimal worker engines (`claude_worker`, `coder_worker`, `codex_worker`, `antigravity_worker`, `analyst_worker`) and anti-babysitting reflex gate (`run/cao_laya_router.py`, `run/cao-laya`, `tests/test_laya.py`).
+- **Autonomous Laya Binding in `cao-auto`**: Dynamic worker and model binding in headless DAG execution (`run/cao_auto.py`).
+- **Git Worktree Isolation Sandboxes (`cao-sandbox`)**: Ephemeral speculative execution in `wcao/sandboxes/<worker>` with automated squash-merge upon test verification (Milestone P6.3 complete: `run/cao_worktree.py`, `run/cao-sandbox`, `tests/test_worktree.py`).
+- **Cross-Project Workstation Memory**: Shared episodic knowledge layer in `~/.cao/fleet_memory.sqlite` accessible via `cao-memory --fleet` and auto-recalled in `cao-auto`.
+- **68/68 test suite passing**: 10 new unit & integration tests covering Laya, Fleet, and Worktree lifecycle.
 
 ---
 

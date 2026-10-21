@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""cao-fleet — Fleet Conductor Workstation Meta-Agent CLI.
+
+Inspect, coordinate, and dispatch tasks across projects on this workstation:
+llmaas, 3DAang, nowait-study, dycom-demo, cao-crew.
+
+Usage:
+  cao-fleet status [--json]
+  cao-fleet inspect <project_name_or_path>
+  cao-fleet dispatch [--project <name>] "<task description>" [--engine <engine>] [--run]
+  cao-fleet route "<task description>" [--json]
+  cao-fleet register <path> [--name <name>]
+  cao-fleet unregister <name>
+  cao-fleet -h | --help
+"""
+import json
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
+from cao_fleet import FleetConductor
+from cao_laya_router import LayaRouter
+
+
+def print_fleet_table(projects: list):
+    print("🛸 CAO FLEET CONDUCTOR — Workstation Projects Overview")
+    print("=" * 95)
+    header = f"{'PROJECT':<14} | {'BRANCH':<12} | {'STATUS':<11} | {'TASKS':<7} | {'ACTIVE TASK / GOAL'}"
+    print(header)
+    print("-" * 95)
+
+    for p in projects:
+        name = p["name"]
+        git = p.get("git", {})
+        branch = git.get("branch", "-")[:12] if git.get("is_git") else "not-git"
+        status = p.get("status", "idle").upper()
+        if p.get("supervisor") != "none":
+            status = f"RUN ({p.get('supervisor')})"[:11]
+        tasks = p.get("tasks_progress", "0/0")
+        active = p.get("active_task", "None")
+        if len(active) > 45:
+            active = active[:42] + "..."
+
+        print(f"{name:<14} | {branch:<12} | {status:<11} | {tasks:<7} | {active}")
+    print("=" * 95)
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print(__doc__.strip())
+        sys.exit(0)
+
+    as_json = "--json" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--json"]
+
+    conductor = FleetConductor()
+    cmd = args[0]
+
+    if cmd in ("status", "ls", "list"):
+        projects = conductor.list_projects()
+        if as_json:
+            print(json.dumps(projects, indent=2))
+        else:
+            print_fleet_table(projects)
+
+    elif cmd == "inspect":
+        if len(args) < 2:
+            print("Usage: cao-fleet inspect <project_name_or_path>", file=sys.stderr)
+            sys.exit(1)
+        target = args[1]
+        try:
+            res = conductor.inspect_project(target)
+            if as_json:
+                print(json.dumps(res, indent=2))
+            else:
+                print(f"📁 Project:    {res['name']} ({res['path']})")
+                git = res.get("git", {})
+                if git.get("is_git"):
+                    print(f"🌿 Git Branch: {git.get('branch')} (Dirty files: {git.get('dirty_files', 0)})")
+                    print(f"📌 HEAD:       {git.get('head_commit')}")
+                print(f"🤖 Supervisor: {res.get('supervisor')} (Session: {res.get('session_name') or 'none'})")
+                tasks = res.get("tasks", {})
+                print(f"📊 Tasks:      {tasks.get('progress')} done")
+                print(f"🎯 Focus:      {tasks.get('active_task')}")
+                if git.get("diff_stat"):
+                    print(f"\n--- Uncommitted Git Changes ---\n{git['diff_stat']}")
+        except Exception as e:
+            print(f"Error inspecting project: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif cmd == "route":
+        if len(args) < 2:
+            print("Usage: cao-fleet route \"<task description>\"", file=sys.stderr)
+            sys.exit(1)
+        task_text = " ".join(args[1:])
+        decision = LayaRouter.route_task(task_text)
+        if as_json:
+            print(json.dumps(decision, indent=2))
+        else:
+            print(f"🎯 Recommended Worker: {decision['worker']} ({decision['provider']})")
+            print(f"🧠 Recommended Model:  {decision['model']}")
+            print(f"📊 Category:           {decision['category']} ({decision['confidence']*100:.0f}% confidence)")
+            print(f"💡 Rationale:          {decision['rationale']}")
+
+    elif cmd == "dispatch":
+        project_name = None
+        engine = None
+        auto_run = "--run" in args or "--auto" in args
+        clean_args = [a for a in args[1:] if a not in ("--run", "--auto")]
+
+        i = 0
+        filtered_task_words = []
+        while i < len(clean_args):
+            if clean_args[i] in ("-p", "--project") and i + 1 < len(clean_args):
+                project_name = clean_args[i + 1]
+                i += 2
+            elif clean_args[i] in ("-e", "--engine") and i + 1 < len(clean_args):
+                engine = clean_args[i + 1]
+                i += 2
+            else:
+                filtered_task_words.append(clean_args[i])
+                i += 1
+
+        task_text = " ".join(filtered_task_words).strip()
+        if not task_text:
+            print("Usage: cao-fleet dispatch [--project <name>] \"<task description>\" [--engine <engine>] [--run]", file=sys.stderr)
+            sys.exit(1)
+
+        try:
+            res = conductor.dispatch_task(
+                task_text=task_text,
+                project_name_or_path=project_name,
+                preferred_engine=engine,
+                auto_run=auto_run,
+            )
+            if as_json:
+                print(json.dumps(res, indent=2))
+            else:
+                print(f"🚀 Dispatched task to '{res['project']}'!")
+                print(f"🎯 Engine:    {res['routed_worker']} (Model: {res['routed_model']})")
+                print(f"📝 Enqueued:  {'wcao/plans/now.md' if res['enqueued_now_md'] else ''} "
+                      f"{'tasks.json' if res['enqueued_session_tasks'] else ''}")
+                if res["auto_run_triggered"]:
+                    print(f"⚡ Headless autonomous runner spawned in background!")
+        except Exception as e:
+            print(f"Dispatch error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif cmd == "register":
+        if len(args) < 2:
+            print("Usage: cao-fleet register <path> [--name <name>]", file=sys.stderr)
+            sys.exit(1)
+        path = args[1]
+        name = None
+        if len(args) >= 4 and args[2] == "--name":
+            name = args[3]
+        name = name or Path(path).name
+        conductor.register_project(name, path)
+        print(f"✓ Registered '{name}' at {path}")
+
+    elif cmd == "unregister":
+        if len(args) < 2:
+            print("Usage: cao-fleet unregister <name>", file=sys.stderr)
+            sys.exit(1)
+        name = args[1]
+        if conductor.unregister_project(name):
+            print(f"✓ Unregistered '{name}'")
+        else:
+            print(f"Project '{name}' was not found in registry.", file=sys.stderr)
+            sys.exit(1)
+
+    else:
+        print(f"Unknown command '{cmd}'. Use 'status', 'inspect', 'route', 'dispatch', 'register', or 'unregister'.", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
