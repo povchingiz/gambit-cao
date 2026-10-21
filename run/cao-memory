@@ -2,9 +2,11 @@
 """cao-memory — CLI interface for SQLite FTS5 Episodic Memory Layer.
 
 Usage:
-  cao-memory query <terms> [--category <cat>] [--limit <N>]
-  cao-memory store --category <cat> --summary <sum> [--details <det>] [--files <f>] [--session <id>]
-  cao-memory list [--limit <N>]
+  cao-memory query <terms> [--category <cat>] [--limit <N>] [--fleet]
+  cao-memory store --category <cat> --summary <sum> [--details <det>] [--files <f>] [--session <id>] [--fleet]
+  cao-memory list [--limit <N>] [--fleet]
+  cao-memory prune [--days 30] [--keep-min 50] [--fleet]
+  cao-memory vacuum [--fleet]
 """
 import argparse
 import sys
@@ -16,7 +18,13 @@ REPO = HERE.parent
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from run.cao_memory import store_memory, query_memory, list_memories
+from run.cao_memory import (
+    store_memory,
+    query_memory,
+    list_memories,
+    prune_memories,
+    vacuum_memory,
+)
 
 
 def main():
@@ -43,6 +51,16 @@ def main():
     p_list = subparsers.add_parser("list", help="List recent memories")
     p_list.add_argument("--limit", "-n", type=int, default=15, help="Maximum entries to list")
     p_list.add_argument("--fleet", action="store_true", help="List from global fleet memory (~/.cao/fleet_memory.sqlite)")
+
+    # prune
+    p_prune = subparsers.add_parser("prune", help="Prune old memories while keeping a minimum number of recent entries")
+    p_prune.add_argument("--days", type=int, default=30, help="Max age in days before pruning (default: 30)")
+    p_prune.add_argument("--keep-min", type=int, default=50, help="Minimum recent entries to retain (default: 50)")
+    p_prune.add_argument("--fleet", action="store_true", help="Prune global fleet memory (~/.cao/fleet_memory.sqlite)")
+
+    # vacuum
+    p_vacuum = subparsers.add_parser("vacuum", help="Optimize FTS5 index and vacuum SQLite database")
+    p_vacuum.add_argument("--fleet", action="store_true", help="Vacuum global fleet memory (~/.cao/fleet_memory.sqlite)")
 
     args = parser.parse_args()
 
@@ -81,6 +99,16 @@ def main():
         print(f"Recent {len(results)} memory entry(ies):")
         for r in results:
             print(f"- [#{r['rowid']} | {r['category']}] {r['summary']} ({r['created_at'][:19]})")
+
+    elif args.subcommand == "prune":
+        pruned = prune_memories(max_age_days=args.days, keep_min=args.keep_min, fleet=args.fleet)
+        target_desc = "~/.cao/fleet_memory.sqlite" if args.fleet else "wcao/memory.sqlite"
+        print(f"✓ Pruned {pruned} memory entry(ies) from {target_desc} (days>{args.days}, keep_min={args.keep_min})")
+
+    elif args.subcommand == "vacuum":
+        vacuum_memory(fleet=args.fleet)
+        target_desc = "~/.cao/fleet_memory.sqlite" if args.fleet else "wcao/memory.sqlite"
+        print(f"✓ Vacuumed and optimized {target_desc}")
 
 
 if __name__ == "__main__":

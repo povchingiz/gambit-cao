@@ -13,7 +13,11 @@
 - **Autonomous Laya Binding in `cao-auto`**: Dynamic worker and model binding in headless DAG execution (`run/cao_auto.py`).
 - **Git Worktree Isolation Sandboxes (`cao-sandbox`)**: Ephemeral speculative execution in `wcao/sandboxes/<worker>` with automated squash-merge upon test verification (Milestone P6.3 complete: `run/cao_worktree.py`, `run/cao-sandbox`, `tests/test_worktree.py`).
 - **Cross-Project Workstation Memory**: Shared episodic knowledge layer in `~/.cao/fleet_memory.sqlite` accessible via `cao-memory --fleet` and auto-recalled in `cao-auto`.
-- **68/68 test suite passing**: 10 new unit & integration tests covering Laya, Fleet, and Worktree lifecycle.
+- **Milestone 6 Production Resilience (`P6.1`, `P6.3`, `P6.4`, `P6.6`)**:
+  - `P6.1` Watchdog (900s wall-clock) & stdout stagnation (180s) detection with fallback self-healing in `run/cao_auto.py`.
+  - `P6.4` Port 9889 stale/zombie daemon self-healing (`heal_stale_daemon` in `run/cao_lib.py` & wired into `run/cao-run`).
+  - `P6.6` Episodic memory pruning & FTS5 optimization (`prune_memories`, `vacuum_memory` in `run/cao_memory.py` & `run/cao-memory`).
+- **74/74 test suite passing**: Full unit & integration coverage including `tests/test_resilience_m6.py`.
 
 ---
 
@@ -42,12 +46,12 @@ All shipped — see [`archive/`](archive/) for historical specs.
 
 ## 🔥 Prioritized Task Queue — Milestone 6: Production Resilience
 
-- [ ] **P6.1 Watchdog & Stagnation Detection** — max 900s wall-clock + 180s stdout stagnation in [`run/cao_auto.py`](../../run/cao_auto.py)
+- [x] **P6.1 Watchdog & Stagnation Detection** — max 900s wall-clock + 180s stdout stagnation in [`run/cao_auto.py`](../../run/cao_auto.py)
 - [ ] **P6.2 CLI Prompt Deadlock Prevention** — non-interactive flags + `[y/N]` auto-responder in worker profiles
-- [ ] **P6.4 Port 9889 Self-Healing** — health-check probe + zombie daemon cleanup in [`run/cao-run`](../../run/cao-run)
+- [x] **P6.4 Port 9889 Self-Healing** — health-check probe + zombie daemon cleanup in [`run/cao-run`](../../run/cao-run)
 - [ ] **P6.5 Setup Wizard `cao-init`** — auto-detect CLIs, generate tailored `cao.config.toml`, 1-click compile
-- [ ] **P6.6 Memory Pruning** — `cao-memory prune` / `vacuum` subcommands to prevent memory dilution
-- [ ] **P6.3 Git Worktree Isolation** — `WorktreeManager` in [`run/cao_worktree.py`](../../run/cao_worktree.py) for parallel workers *(most complex, last)*
+- [x] **P6.6 Memory Pruning** — `cao-memory prune` / `vacuum` subcommands to prevent memory dilution
+- [x] **P6.3 Git Worktree Isolation** — `WorktreeManager` in [`run/cao_worktree.py`](../../run/cao_worktree.py) for parallel workers *(most complex, last)*
 
 ---
 

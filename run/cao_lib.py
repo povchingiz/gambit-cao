@@ -2,11 +2,17 @@
 Extracted from cao-tokens to avoid duplication."""
 import json
 import os
+import re
+import signal
+import socket
 import sqlite3
+import subprocess
 import sys
 import time
+import urllib.request
 from glob import glob
 from pathlib import Path
+from typing import List
 
 HOME = Path.home()
 
@@ -67,3 +73,122 @@ def hn(n):
     if abs(n) >= 1_000:
         return f"{n/1_000:.1f}k"
     return str(n)
+
+
+def is_port_open(port: int = 9889, host: str = "127.0.0.1", timeout: float = 1.0) -> bool:
+    """Return True if a TCP socket is listening on host:port."""
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def probe_daemon_health(port: int = 9889, host: str = "127.0.0.1", timeout: float = 2.0) -> bool:
+    """Return True if the daemon on host:port responds HTTP 2xx to /health or /sessions."""
+    for endpoint in ("/health", "/sessions"):
+        url = f"http://{host}:{port}{endpoint}"
+        try:
+            with urllib.request.urlopen(url, timeout=timeout) as resp:
+                if 200 <= getattr(resp, "status", 200) < 300:
+                    return True
+        except Exception:
+            continue
+    return False
+
+
+def find_pids_on_port(port: int = 9889) -> List[int]:
+    """Find PIDs bound to the given TCP port."""
+    pids: List[int] = []
+    my_pid = os.getpid()
+
+    # Try lsof first
+    try:
+        res = subprocess.run(
+            ["lsof", "-ti", f"tcp:{port}"],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            for line in res.stdout.splitlines():
+                line = line.strip()
+                if line.isdigit():
+                    pid = int(line)
+                    if pid != my_pid and pid not in pids:
+                        pids.append(pid)
+    except Exception:
+        pass
+
+    # Fallback to ss if lsof returned nothing
+    if not pids:
+        try:
+            res = subprocess.run(
+                ["ss", "-lptn", f"sport = :{port}"],
+                capture_output=True,
+                text=True,
+                timeout=3,
+            )
+            if res.returncode == 0 and res.stdout:
+                for match in re.findall(r"pid=(\d+)", res.stdout):
+                    pid = int(match)
+                    if pid != my_pid and pid not in pids:
+                        pids.append(pid)
+        except Exception:
+            pass
+
+    return pids
+
+
+def terminate_stale_pids(pids: List[int], sigterm_wait: float = 1.0) -> List[int]:
+    """Send SIGTERM (then SIGKILL if needed) to stale daemon PIDs."""
+    terminated: List[int] = []
+    for pid in pids:
+        try:
+            os.kill(pid, signal.SIGTERM)
+            terminated.append(pid)
+        except ProcessLookupError:
+            continue
+        except PermissionError:
+            continue
+
+    if terminated and sigterm_wait > 0:
+        deadline = time.monotonic() + sigterm_wait
+        while time.monotonic() < deadline:
+            still_alive = []
+            for pid in terminated:
+                try:
+                    os.kill(pid, 0)
+                    still_alive.append(pid)
+                except OSError:
+                    pass
+            if not still_alive:
+                break
+            time.sleep(0.05)
+
+        for pid in terminated:
+            try:
+                os.kill(pid, 0)
+                os.kill(pid, signal.SIGKILL)
+            except OSError:
+                pass
+
+    return terminated
+
+
+def heal_stale_daemon(port: int = 9889, timeout: float = 2.0) -> bool:
+    """Probe http://127.0.0.1:<port>/health (or /sessions); if the port is bound
+    by an unresponsive/zombie process that fails HTTP health checks, terminate
+    the stale process so a new daemon can bind cleanly.
+
+    Returns True if a stale daemon was detected and cleaned up, False otherwise.
+    """
+    if not is_port_open(port=port, timeout=min(1.0, timeout)):
+        return False
+
+    if probe_daemon_health(port=port, timeout=timeout):
+        return False
+
+    pids = find_pids_on_port(port=port)
+    terminate_stale_pids(pids)
+    return True

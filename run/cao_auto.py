@@ -6,6 +6,7 @@ REST API (port 9889), auto-routes 429/quota errors to the universal OpenCode
 fallback engine (coder_worker / DeepSeek-V4-Pro), updates tasks.json in real
 time for cao-monitor, and executes the automated Audit Gate upon completion.
 """
+import hashlib
 import json
 import os
 import re
@@ -148,6 +149,8 @@ class AutonomousRunner:
         dry_run: bool = False,
         self_heal: bool = True,
         max_heal_attempts: int = 3,
+        wall_clock_timeout: float = 900.0,
+        stagnation_timeout: float = 180.0,
     ):
         self.tasks_file = tasks_file
         self.session_dir = tasks_file.parent
@@ -157,10 +160,12 @@ class AutonomousRunner:
         self.dry_run = dry_run
         self.self_heal = self_heal
         self.max_heal_attempts = max_heal_attempts
+        self.wall_clock_timeout = wall_clock_timeout
+        self.stagnation_timeout = stagnation_timeout
         self.compactor = ContextCompactor()
         self.token_master = TokenMaster()
         self.recent_worker_outputs: List[str] = []
-        # Map: task_id -> {terminal_id, started_monotonic}
+        # Map: task_id -> {terminal_id, started, last_output_hash, last_output_change_monotonic}
         self.active_workers: Dict[str, dict] = {}
 
     def load_tasks(self) -> List[dict]:
@@ -384,7 +389,14 @@ class AutonomousRunner:
         self.save_tasks(all_tasks)
 
         if self.dry_run:
-            self.active_workers[tid] = {"dry_run": True, "started": time.monotonic()}
+            now_mono = time.monotonic()
+            self.active_workers[tid] = {
+                "dry_run": True,
+                "started": now_mono,
+                "started_monotonic": now_mono,
+                "last_output_hash": hashlib.sha256(b"").hexdigest(),
+                "last_output_change_monotonic": now_mono,
+            }
             return
 
         try:
@@ -395,10 +407,14 @@ class AutonomousRunner:
                 working_directory=str(self.repo_root),
             )
             terminal_id = resp.get("terminal_id") or resp.get("terminals", [{}])[0].get("terminal_id")
+            now_mono = time.monotonic()
             self.active_workers[tid] = {
                 "terminal_id": terminal_id,
                 "engine": engine,
-                "started": time.monotonic(),
+                "started": now_mono,
+                "started_monotonic": now_mono,
+                "last_output_hash": hashlib.sha256(b"").hexdigest(),
+                "last_output_change_monotonic": now_mono,
             }
         except Exception as exc:
             # Check if launch failure is a quota/engine error -> auto-fallback
@@ -443,6 +459,20 @@ class AutonomousRunner:
                 status = term.get("status", "").upper()
                 output = self.client.get_terminal_output(terminal_id)
 
+                now_mono = time.monotonic()
+                started_mono = meta.get("started", meta.get("started_monotonic", now_mono))
+                out_hash = hashlib.sha256((output or "").encode("utf-8", errors="ignore")).hexdigest()
+                prev_hash = meta.get("last_output_hash")
+                if prev_hash is None:
+                    meta["last_output_hash"] = out_hash
+                    meta.setdefault("last_output_change_monotonic", started_mono)
+                elif out_hash != prev_hash and (output or "") != prev_hash:
+                    meta["last_output_hash"] = out_hash
+                    meta["last_output_change_monotonic"] = now_mono
+                else:
+                    meta["last_output_hash"] = out_hash
+                    meta.setdefault("last_output_change_monotonic", started_mono)
+
                 # Check 429 / Quota error
                 if is_quota_error(output) or is_quota_error(term.get("error")):
                     failed_engine = meta.get("engine", task.get("engine", "unknown"))
@@ -475,6 +505,42 @@ class AutonomousRunner:
                     )
                     self.client.delete_terminal(terminal_id)
                     completed.append(tid)
+                else:
+                    # P6.1 Watchdog & Stagnation Detection
+                    elapsed_wall = now_mono - started_mono
+                    elapsed_stag = now_mono - meta.get("last_output_change_monotonic", started_mono)
+                    timeout_reason = None
+                    if self.wall_clock_timeout is not None and elapsed_wall > self.wall_clock_timeout:
+                        timeout_reason = "watchdog_timeout"
+                    elif self.stagnation_timeout is not None and elapsed_stag > self.stagnation_timeout:
+                        timeout_reason = "stdout_stagnation"
+
+                    if timeout_reason:
+                        self.client.delete_terminal(terminal_id)
+                        retries = task.get("watchdog_retries", 0) + 1
+                        task["watchdog_retries"] = retries
+                        task["failure_reason"] = timeout_reason
+                        if self.self_heal and retries <= self.max_heal_attempts:
+                            apply_fallback(task, timeout_reason)
+                            task["status"] = "pending"
+                            notify_telegram(
+                                f"Task {tid}: {timeout_reason} on {meta.get('engine')} -> requeued on {task['engine']}",
+                                level="warn",
+                            )
+                        else:
+                            task["status"] = "failed"
+                            task.setdefault("comments", []).append(
+                                {
+                                    "by": "orchestrator",
+                                    "at": datetime.now(timezone.utc).isoformat(),
+                                    "text": f"Task terminated due to {timeout_reason} (retries={retries})",
+                                }
+                            )
+                            notify_telegram(
+                                f"Task {tid}: failed permanently due to {timeout_reason}",
+                                level="block",
+                            )
+                        completed.append(tid)
             except Exception as exc:
                 print(f"WARN polling terminal {terminal_id}: {exc}", file=sys.stderr)
 

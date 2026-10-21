@@ -6,7 +6,7 @@ decisions, bug fixes, and user preferences into wcao/memory.sqlite.
 import re
 import sqlite3
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -171,3 +171,65 @@ def list_memories(
         (limit,),
     )
     return [dict(r) for r in cursor.fetchall()]
+
+
+def prune_memories(
+    max_age_days: int = 30,
+    keep_min: int = 50,
+    db_path: Optional[Path] = None,
+    fleet: bool = False,
+) -> int:
+    """Prune episodic memories older than max_age_days while retaining at least keep_min recent entries.
+
+    Returns the number of pruned entries.
+    """
+    conn = get_connection(db_path, fleet=fleet)
+    rows = conn.execute(
+        """
+        SELECT rowid, created_at
+        FROM session_memory
+        ORDER BY created_at DESC, rowid DESC
+        """
+    ).fetchall()
+
+    if len(rows) <= max(0, keep_min):
+        conn.close()
+        return 0
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
+    candidates = rows[max(0, keep_min):]
+    rowids_to_delete: List[int] = []
+
+    for row in candidates:
+        raw_ts = row["created_at"] or ""
+        try:
+            dt = datetime.fromisoformat(raw_ts.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            if dt < cutoff:
+                rowids_to_delete.append(int(row["rowid"]))
+        except Exception:
+            continue
+
+    if rowids_to_delete:
+        placeholders = ",".join("?" for _ in rowids_to_delete)
+        with conn:
+            conn.execute(
+                f"DELETE FROM session_memory WHERE rowid IN ({placeholders})",
+                rowids_to_delete,
+            )
+
+    conn.close()
+    return len(rowids_to_delete)
+
+
+def vacuum_memory(
+    db_path: Optional[Path] = None,
+    fleet: bool = False,
+) -> None:
+    """Optimize FTS5 index and VACUUM the SQLite memory database."""
+    conn = get_connection(db_path, fleet=fleet)
+    with conn:
+        conn.execute("INSERT INTO session_memory(session_memory) VALUES('optimize')")
+    conn.execute("VACUUM")
+    conn.close()
