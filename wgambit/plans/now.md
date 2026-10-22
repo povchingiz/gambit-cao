@@ -36,6 +36,8 @@
 
 - **Masked Distillation Platform (`wgambit/design/masked-distillation-platform.md`):** Theoretical formulation of stealth concept reverse-engineering via isomorphic category theory camouflage, deconstructive DAG partitioning, distributed persona sharding, and local inverse recombination.
 - **Video Analytics & Action Recognition (`wgambit/design/video-analytics-architecture.md`):** Comprehensive architecture for real-time human activity recognition, surgical SOP compliance, and natural language video search ("Google for CCTV").
+- **GitHub & Fleet Archive Audit (`github_archive_audit_and_synergy_map.md`):** Full audit of 12 `@povchingiz` GitHub repositories + local desktop projects. Identified cleanup targets (`y`, `advml`, `TSAproject`, `kaggle-solutions`) and high-impact synergies to absorb (`dycom` ➔ `dycom-demo`, `edge-tts` ➔ `3DAang`/`llmaas`, `token-audit` ➔ `gambit`, `AvatarLink` ➔ `3DAang`).
+
 
 
 ### 1. ♘ Knight 1: `dycom-demo` — Smart Diagnostic Annotator & Hazard Radar
