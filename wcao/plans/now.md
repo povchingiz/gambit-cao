@@ -56,10 +56,11 @@ All shipped — see [`archive/`](archive/) for historical specs.
 - [x] **P6.6 Memory Pruning** — `cao-memory prune` / `vacuum` subcommands to prevent memory dilution
 - [x] **P6.3 Git Worktree Isolation** — `WorktreeManager` in [`run/cao_worktree.py`](../../run/cao_worktree.py) for parallel workers
 - [x] **1000x Autonomous Closed-Loop Self-Healing (`cao-repair`)** — End-to-end bug discovery, sandbox worktree isolation, surgical remediation, re-audit verification & auto-squash merge ([`run/cao_repair.py`](../../run/cao_repair.py), [`run/cao-repair`](../../run/cao-repair))
+- [x] **Self-Evolving Agent Harness (`cao-evolve`)** — Protected Prompt Self-Evolution Loop: root-cause error clustering, anti-bloat prompt synthesis, Dual-Gate verification (Gate 1: Quality / 100% test pass rate + Gate 2: Performance / Token Budget Protection) ([`run/cao_evolve.py`](../../run/cao_evolve.py), [`run/cao-evolve`](../../run/cao-evolve))
 
 ---
 
-## 🚀 80/80 Test Suite Passing
+## 🚀 83/83 Test Suite Passing
 Full unit & integration test coverage across the entire system.
 
 ---

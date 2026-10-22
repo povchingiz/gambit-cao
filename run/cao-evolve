@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+"""cao-evolve — Protected Prompt Self-Evolution Loop CLI.
+
+Implements the Self-Evolving Agent Harness:
+- Classifies failure traces into systematic root-cause patterns
+- Refines worker prompts in isolated git sandboxes (cao-sandbox)
+- Validates changes through Dual Gates:
+    1. Quality Gate: 100% test pass rate + AST anti-tampering
+    2. Performance Gate: Token budget protection (anti-bloat)
+- Merges accepted mutations atomically without breaking working competence.
+
+Usage:
+  cao-evolve <worker_name> --trace <failure_text_or_file> [options]
+  cao-evolve status
+  cao-evolve diagnose <failure_text_or_file>
+
+Options:
+  --trace <text_or_file>   Error trace or failure log to analyze
+  --directive <text>       Optional explicit instruction to evaluate through gates
+  --no-merge               Test evolution through Dual Gates without merging
+  --json                   Output full JSON verdict
+  -h, --help               Show this help message
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
+from cao_evolve import PromptEvolutionEngine
+
+
+def print_evolution_summary(res):
+    print("🧬 CAO-EVOLVE — Protected Prompt Self-Evolution Loop")
+    print("=" * 78)
+    print(f"🤖 Worker:           {res.worker_name}")
+    print(f"🔍 Root Cause:       {res.root_cause}")
+    print(f"📏 Token Budget:     {res.original_tokens} -> {res.candidate_tokens} tokens")
+    print("-" * 78)
+    print(f"🛡️  Gate 1 (Quality):     {'PASS' if res.quality_gate.passed else 'FAIL'}")
+    print(f"   └─ {res.quality_gate.details}")
+    print(f"⚡ Gate 2 (Performance): {'PASS' if res.performance_gate.passed else 'FAIL'}")
+    print(f"   └─ {res.performance_gate.details}")
+    print("-" * 78)
+    verdict = "ACCEPTED & SQUASH-MERGED" if res.accepted else "REJECTED (Protected Competence Preserved)"
+    print(f"⚖️  VERDICT:          {verdict}")
+    if res.commit_sha:
+        print(f"🔗 Commit SHA:        {res.commit_sha}")
+    if res.rejection_reason:
+        print(f"⚠️  Rejection Detail: {res.rejection_reason}")
+    print("=" * 78)
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or "-h" in args or "--help" in args:
+        print(__doc__.strip())
+        sys.exit(0)
+
+    engine = PromptEvolutionEngine()
+
+    if args[0] == "status":
+        log_file = REPO / "wcao" / "audit" / "evolution_log.jsonl"
+        print("📜 CAO-EVOLVE — Prompt Evolution History")
+        print("=" * 78)
+        if not log_file.exists() or not log_file.stat().st_size:
+            print("No evolution cycles recorded yet.")
+        else:
+            with open(log_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        entry = json.loads(line)
+                        status = "ACCEPTED" if entry.get("accepted") else "REJECTED"
+                        print(f"• [{entry.get('timestamp')[:19]}] {entry.get('worker_name'):15s} "
+                              f"{entry.get('root_cause'):22s} -> {status} "
+                              f"({entry.get('original_tokens')}->{entry.get('candidate_tokens')} tokens)")
+        print("=" * 78)
+        sys.exit(0)
+
+    if args[0] == "diagnose":
+        if len(args) < 2:
+            print("Error: Missing failure text for diagnose.", file=sys.stderr)
+            sys.exit(1)
+        raw = " ".join(args[1:])
+        if Path(raw).exists():
+            raw = Path(raw).read_text(encoding="utf-8")
+        classification = engine.classify_failure(raw)
+        print(f"🔍 Failure Taxonomy: {classification}")
+        sys.exit(0)
+
+    worker_name = args[0]
+    failure_trace = ""
+    custom_directive = None
+    auto_merge = True
+    as_json = False
+
+    i = 1
+    while i < len(args):
+        a = args[i]
+        if a == "--trace" and i + 1 < len(args):
+            failure_trace = args[i + 1]
+            if Path(failure_trace).exists():
+                failure_trace = Path(failure_trace).read_text(encoding="utf-8")
+            i += 2
+        elif a == "--directive" and i + 1 < len(args):
+            custom_directive = args[i + 1]
+            i += 2
+        elif a == "--no-merge":
+            auto_merge = False
+            i += 1
+        elif a == "--json":
+            as_json = True
+            i += 1
+        else:
+            print(f"Unknown argument: {a}", file=sys.stderr)
+            sys.exit(1)
+
+    if not failure_trace and not custom_directive:
+        print("Error: Either --trace or --directive must be provided.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        res = engine.evolve_worker(
+            worker_name=worker_name,
+            failure_trace=failure_trace,
+            custom_directive=custom_directive,
+            auto_merge=auto_merge,
+        )
+        if as_json:
+            from dataclasses import asdict
+            print(json.dumps(asdict(res), indent=2))
+        else:
+            print_evolution_summary(res)
+    except Exception as exc:
+        print(f"Error during prompt evolution: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
