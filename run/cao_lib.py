@@ -192,3 +192,101 @@ def heal_stale_daemon(port: int = 9889, timeout: float = 2.0) -> bool:
     pids = find_pids_on_port(port=port)
     terminate_stale_pids(pids)
     return True
+
+
+# ==============================================================================
+# GAMBIT Workspace Resolution & Auto-Migration Patch (wcao <-> wgambit)
+# ==============================================================================
+
+def patch_workspace_migration(repo_root: Path) -> Path:
+    """Detects legacy wcao/ in repo_root and migrates/links it to wgambit/.
+    
+    Ensures complete preservation of sequence diagrams, schemas, plans,
+    memory, and audit trails while establishing wgambit as the canonical workspace.
+    
+    If wcao/ exists and wgambit/ does not:
+      1. Renames wcao -> wgambit
+      2. Creates a relative symlink wcao -> wgambit for 100% backwards compatibility
+         with legacy tools, scripts, and tests.
+    
+    If wgambit/ exists and wcao/ does not:
+      Creates a relative symlink wcao -> wgambit for backwards compatibility.
+      
+    Returns:
+      Canonical Path to wgambit/.
+    """
+    repo_root = Path(repo_root).resolve()
+    wcao_dir = repo_root / "wcao"
+    wgambit_dir = repo_root / "wgambit"
+
+    # Case 1: wcao exists, wgambit does not exist
+    if wcao_dir.exists() and not wgambit_dir.exists():
+        if wcao_dir.is_symlink():
+            # If wcao is already a symlink pointing to wgambit (broken target), fix it
+            target = os.readlink(wcao_dir)
+            if target == "wgambit":
+                wgambit_dir.mkdir(parents=True, exist_ok=True)
+                return wgambit_dir
+        # Rename physical directory wcao -> wgambit
+        wcao_dir.rename(wgambit_dir)
+        # Create backward-compatibility symlink: wcao -> wgambit
+        try:
+            os.symlink("wgambit", wcao_dir)
+        except OSError:
+            pass
+        return wgambit_dir
+
+    # Case 2: wgambit exists, wcao does not exist
+    elif wgambit_dir.exists() and not wcao_dir.exists():
+        try:
+            os.symlink("wgambit", wcao_dir)
+        except OSError:
+            pass
+        return wgambit_dir
+
+    # Case 3: Both exist
+    elif wgambit_dir.exists() and wcao_dir.exists():
+        return wgambit_dir
+
+    # Case 4: Neither exists -> default to wgambit
+    return wgambit_dir
+
+
+def resolve_workspace_dir(repo_root: Path, create: bool = True, auto_patch: bool = True) -> Path:
+    """Resolve the active GAMBIT workspace directory (wgambit/ or wcao/).
+    
+    Parameters:
+      repo_root: Path to repository or project root.
+      create: If True, creates wgambit/ (and symlink wcao -> wgambit) if neither exists.
+      auto_patch: If True, automatically patches and migrates legacy wcao/ -> wgambit/.
+      
+    Returns:
+      Resolved Path object pointing to the workspace directory.
+    """
+    repo_root = Path(repo_root).resolve()
+    wcao_dir = repo_root / "wcao"
+    wgambit_dir = repo_root / "wgambit"
+
+    if auto_patch:
+        if wcao_dir.exists() and not wgambit_dir.exists():
+            return patch_workspace_migration(repo_root)
+        if wgambit_dir.exists() and not wcao_dir.exists():
+            return patch_workspace_migration(repo_root)
+
+    if wgambit_dir.exists():
+        return wgambit_dir
+
+    if wcao_dir.exists():
+        return wcao_dir
+
+    if create:
+        wgambit_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            if not wcao_dir.exists():
+                os.symlink("wgambit", wcao_dir)
+        except OSError:
+            pass
+        return wgambit_dir
+
+    return wgambit_dir
+

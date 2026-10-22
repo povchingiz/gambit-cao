@@ -22,7 +22,7 @@ from run.cao_telegram import notify_telegram
 
 
 def find_latest_session(root_dir: Path) -> Path:
-    for s_name in ["wcao", "cao_session"]:
+    for s_name in ["wgambit", "wcao", "cao_session"]:
         session_dir = root_dir / s_name
         if session_dir.exists():
             sessions = [
@@ -38,7 +38,7 @@ def find_latest_session(root_dir: Path) -> Path:
             if sessions:
                 sessions.sort()
                 return sessions[-1]
-    sys.exit(f"ERROR: No wcao/ or cao_session/ directories with tasks.json found in {root_dir}")
+    sys.exit(f"ERROR: No wgambit/, wcao/ or cao_session/ directories with tasks.json found in {root_dir}")
 
 
 def main():

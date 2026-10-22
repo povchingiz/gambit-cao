@@ -74,6 +74,13 @@ def decompose_goal(
     """
     tm = token_master or TokenMaster()
 
+    try:
+        from run.cao_lib import resolve_workspace_dir
+        ws = resolve_workspace_dir(repo_root, create=True, auto_patch=True)
+    except ImportError:
+        ws = repo_root / "wgambit" if (repo_root / "wgambit").exists() else repo_root / "wcao"
+    ws_name = ws.name
+
     # Determine project type
     is_python = (repo_root / "pyproject.toml").exists() or (repo_root / "setup.py").exists()
     is_node = (repo_root / "package.json").exists()
@@ -91,8 +98,8 @@ def decompose_goal(
             "status": "pending",
             "engine": arch_engine,
             "depends_on": [],
-            "files": [f"wcao/design/{slug}.mmd"],
-            "detail": f"Analyze requirements for '{goal}'. Write Mermaid sequence and state diagrams to wcao/design/{slug}.mmd defining interfaces, input/output schemas, and error cases.",
+            "files": [f"{ws_name}/design/{slug}.mmd"],
+            "detail": f"Analyze requirements for '{goal}'. Write Mermaid sequence and state diagrams to {ws_name}/design/{slug}.mmd defining interfaces, input/output schemas, and error cases.",
         },
         {
             "id": f"task_02_{slug}_impl",
@@ -101,7 +108,7 @@ def decompose_goal(
             "engine": "coder_worker",
             "depends_on": [f"task_01_{slug}_arch"],
             "files": [f"run/cao_{slug}.py" if is_python else f"src/{slug}.ts"],
-            "detail": f"Implement the core logic fulfilling the architecture contract in wcao/design/{slug}.mmd. Ensure clean, type-annotated code with error handling.",
+            "detail": f"Implement the core logic fulfilling the architecture contract in {ws_name}/design/{slug}.mmd. Ensure clean, type-annotated code with error handling.",
         },
         {
             "id": f"task_03_{slug}_tests",
@@ -135,13 +142,17 @@ def save_plan(
     goal: str,
     repo_root: Path,
 ) -> Path:
-    """Save the tasks into wcao/tasks.json and update wcao/plans/now.md."""
-    wcao = repo_root / "wcao"
-    wcao.mkdir(parents=True, exist_ok=True)
-    plans_dir = wcao / "plans"
+    """Save the tasks into wgambit/tasks.json (or wcao/tasks.json) and update plans/now.md."""
+    try:
+        from run.cao_lib import resolve_workspace_dir
+        ws = resolve_workspace_dir(repo_root, create=True, auto_patch=True)
+    except ImportError:
+        ws = repo_root / "wgambit" if (repo_root / "wgambit").exists() else repo_root / "wcao"
+    ws.mkdir(parents=True, exist_ok=True)
+    plans_dir = ws / "plans"
     plans_dir.mkdir(parents=True, exist_ok=True)
 
-    tasks_file = wcao / "tasks.json"
+    tasks_file = ws / "tasks.json"
     tasks_file.write_text(json.dumps(tasks, indent=2) + "\n", encoding="utf-8")
 
     # Update now.md
@@ -150,7 +161,7 @@ def save_plan(
 
 > **Active Goal:** {goal}
 > **Generated:** {datetime.now(timezone.utc).isoformat()[:19]} UTC
-> **Autonomous Queue:** [`wcao/tasks.json`](../tasks.json) ({len(tasks)} tasks)
+> **Autonomous Queue:** [`{ws.name}/tasks.json`](../tasks.json) ({len(tasks)} tasks)
 
 ## Planned Tasks
 """
@@ -169,15 +180,19 @@ def main():
     args = parser.parse_args()
 
     repo_root = find_repo_root(Path.cwd())
-    wcao = repo_root / "wcao"
+    try:
+        from run.cao_lib import resolve_workspace_dir
+        ws = resolve_workspace_dir(repo_root, create=True, auto_patch=True)
+    except ImportError:
+        ws = repo_root / "wgambit" if (repo_root / "wgambit").exists() else repo_root / "wcao"
 
     goal = args.goal
     if not goal:
-        now_md = wcao / "plans" / "now.md"
+        now_md = ws / "plans" / "now.md"
         goal = extract_goal_from_now_md(now_md)
 
     if not goal:
-        sys.exit("Error: No goal provided and wcao/plans/now.md has no defined goal.\nUsage: cao-plan 'Your goal here'")
+        sys.exit(f"Error: No goal provided and {ws.name}/plans/now.md has no defined goal.\nUsage: cao-plan 'Your goal here'")
 
     print(f"==> Decomposing goal: '{goal}'")
     tm = TokenMaster()
