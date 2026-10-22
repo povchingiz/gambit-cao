@@ -17,6 +17,12 @@ Options:
   --out-md <path>            Output Markdown report path (default: wcao/audit/qa_ux_report.md)
   --out-json <path>          Output JSON report path (default: wcao/audit/qa_ux_report.json)
   --dispatch-project <name>  Automatically enqueue discovered QA/UX bugs into cao-fleet
+  --allow-destructive        Allow clicking potentially destructive buttons (delete, wipe, purge)
+  --no-autofill              Disable smart form auto-fill before clicking submit buttons
+  --no-modals                Disable 2-hop modal/dialog exploration
+  --screenshots-dir <path>   Capture visual PNG screenshots of elements triggering errors
+  --screenshots              Save visual issue screenshots to default wcao/audit/screenshots/
+  --headed                   Run browser in visible desktop window (default: headless)
   --json                     Print full JSON audit report to stdout
   -h, --help                 Show this help message
 """
@@ -62,6 +68,14 @@ def print_terminal_summary(report: dict, md_path: Path, json_path: Path):
     print(f"  • Small Hit Targets (< 24x24 px):                    {s['small_targets_count']}")
     print(f"  • Unlabeled Controls (Missing A11y Name):            {s['unlabeled_controls_count']}")
     print(f"  • Viewport Overflow: Desktop={'YES' if s['desktop_overflow'] else 'NO'} | Mobile={'YES' if s['mobile_overflow'] else 'NO'}")
+    if s.get("safety_skipped_count", 0) > 0:
+        print(f"  🛡️ Destructive Actions Safely Skipped:               {s['safety_skipped_count']} (use --allow-destructive)")
+    if s.get("forms_autofilled_count", 0) > 0:
+        print(f"  📝 Forms Smartly Auto-filled:                        {s['forms_autofilled_count']}")
+    if s.get("modals_opened_count", 0) > 0:
+        print(f"  🪟 Modal / Dialog Exploration Cycles:                {s['modals_opened_count']}")
+    if s.get("screenshots_count", 0) > 0:
+        print(f"  📸 Visual Issue Screenshots Captured:                {s['screenshots_count']}")
     print("-" * 88)
     if h["ux_simplification_hints"]:
         print("💡 Top UX Simplification & Remediation Hints:")
@@ -93,6 +107,11 @@ def main():
     out_json = None
     dispatch_project = None
     as_json = False
+    allow_destructive = False
+    autofill_forms = True
+    explore_modals = True
+    screenshots_dir = None
+    headless = True
 
     i = 0
     while i < len(args):
@@ -112,6 +131,24 @@ def main():
         elif a == "--dispatch-project" and i + 1 < len(args):
             dispatch_project = args[i + 1]
             i += 2
+        elif a == "--allow-destructive":
+            allow_destructive = True
+            i += 1
+        elif a == "--no-autofill":
+            autofill_forms = False
+            i += 1
+        elif a == "--no-modals":
+            explore_modals = False
+            i += 1
+        elif a == "--screenshots-dir" and i + 1 < len(args):
+            screenshots_dir = args[i + 1]
+            i += 2
+        elif a == "--screenshots":
+            screenshots_dir = str(HERE.parent / "wcao" / "audit" / "screenshots")
+            i += 1
+        elif a == "--headed":
+            headless = False
+            i += 1
         elif a == "--json":
             as_json = True
             i += 1
@@ -130,6 +167,11 @@ def main():
         target=target,
         backend_log_path=backend_log,
         max_elements=max_elements,
+        headless=headless,
+        allow_destructive=allow_destructive,
+        autofill_forms=autofill_forms,
+        explore_modals=explore_modals,
+        screenshots_dir=screenshots_dir,
     )
     report = auditor.run_audit()
     md_path, json_path = auditor.save_reports(report, out_md=out_md, out_json=out_json)

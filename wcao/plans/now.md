@@ -17,7 +17,8 @@
   - `P6.1` Watchdog (900s wall-clock) & stdout stagnation (180s) detection with fallback self-healing in `run/cao_auto.py`.
   - `P6.4` Port 9889 stale/zombie daemon self-healing (`heal_stale_daemon` in `run/cao_lib.py` & wired into `run/cao-run`).
   - `P6.6` Episodic memory pruning & FTS5 optimization (`prune_memories`, `vacuum_memory` in `run/cao_memory.py` & `run/cao-memory`).
-- **74/74 test suite passing**: Full unit & integration coverage including `tests/test_resilience_m6.py`.
+- [x] **Playwright Autonomous Full-Stack QA & UI/UX Auditor (`cao-qa`)**: Comprehensive Playwright auditing engine (`run/cao_qa.py`, `run/cao-qa`, `tests/test_cao_qa.py`, `wcao/skills/playwright-qa-ux-auditor.md`) featuring full-stack log correlation, destructive action safety guards, smart form auto-filling, 2-hop modal exploration, visual error screenshots with high-contrast outlines, dual-viewport testing (Desktop & Mobile), and direct `cao-fleet` remediation dispatch.
+- **77/77 test suite passing**: Full unit & integration coverage across all modules.
 
 ---
 
@@ -44,7 +45,9 @@ All shipped — see [`archive/`](archive/) for historical specs.
 
 ---
 
-## 🔥 Prioritized Task Queue — Milestone 6: Production Resilience
+## 🔥 Prioritized Task Queue
+
+- [x] **[antigravity_worker]** Implement cao-qa Playwright Autonomous QA, Full-Stack Log Correlator & UI/UX Redundancy Auditor CLI and Skill (wcao/plans/2026-10-22-playwright-qa-ux-auditor.md) *(Model: gemini-3.8-flash-high)* — Milestone 6: Production Resilience
 
 - [x] **P6.1 Watchdog & Stagnation Detection** — max 900s wall-clock + 180s stdout stagnation in [`run/cao_auto.py`](../../run/cao_auto.py)
 - [ ] **P6.2 CLI Prompt Deadlock Prevention** — non-interactive flags + `[y/N]` auto-responder in worker profiles

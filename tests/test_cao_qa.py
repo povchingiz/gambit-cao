@@ -199,3 +199,73 @@ def test_playwright_qa_auditor_catches_all_ux_and_fullstack_defects(qa_test_serv
     assert "Redundant Controls" in md_text
     assert "Silent Dead Clicks" in md_text
     assert "DatabaseConnectionError" in md_text
+
+
+def test_cao_qa_safety_autofill_modals_and_screenshots(tmp_path):
+    """Test safety skipping destructive buttons, form autofill, modal exploration, and visual screenshots."""
+    html_content = """<!DOCTYPE html>
+<html>
+<head><title>Advanced QA Fixture</title></head>
+<body>
+  <form id="login-form" onsubmit="event.preventDefault(); document.getElementById('res').innerText = 'Filled:' + this.elements['email'].value;">
+    <input type="email" name="email" required placeholder="User Email">
+    <input type="password" name="password" required>
+    <button type="submit" id="btn-submit">Submit Form</button>
+  </form>
+  <div id="res">Waiting</div>
+
+  <!-- Destructive buttons -->
+  <button id="btn-purge" onclick="document.getElementById('res').innerText = 'Purged!';">Purge Database</button>
+
+  <!-- Modal Dialog -->
+  <button id="btn-open-modal" onclick="document.getElementById('diag').showModal();">Configure Dialog</button>
+  <dialog id="diag">
+    <button id="btn-inside-modal" onclick="document.getElementById('res').innerText = 'ModalClicked';">Activate Inside Dialog</button>
+    <button id="btn-close-modal" onclick="document.getElementById('diag').close();">Close</button>
+  </dialog>
+
+  <!-- Error button to trigger visual screenshot -->
+  <button id="btn-crash" onclick="console.error('SimulatedBoomError');">Trigger Error</button>
+</body>
+</html>"""
+    fixture_file = tmp_path / "advanced_fixture.html"
+    fixture_file.write_text(html_content, encoding="utf-8")
+    screenshots_dir = tmp_path / "screenshots"
+
+    # Run 1: allow_destructive=False (default safe mode)
+    auditor_safe = PlaywrightQAAuditor(
+        target=str(fixture_file),
+        allow_destructive=False,
+        autofill_forms=True,
+        explore_modals=True,
+        screenshots_dir=str(screenshots_dir),
+        click_wait_ms=80,
+    )
+    report_safe = auditor_safe.run_audit()
+
+    s = report_safe["summary"]
+    # 1. Purge button must be safely skipped
+    assert s["safety_skipped_count"] >= 1
+    skipped_labels = [c["label"] for c in report_safe["heuristics"]["safety_skipped_controls"]]
+    assert any("Purge Database" in lbl for lbl in skipped_labels)
+
+    # 2. Form must be autofilled and submitted
+    assert s["forms_autofilled_count"] >= 1
+
+    # 3. Modal must be opened and explored
+    assert s["modals_opened_count"] >= 1
+
+    # 4. Screenshot must be captured for the crash button
+    assert s["screenshots_count"] >= 1
+    assert any(Path(p).exists() for p in report_safe["heuristics"]["screenshots"])
+
+    # Run 2: allow_destructive=True -> Destructive button is not skipped
+    auditor_destruct = PlaywrightQAAuditor(
+        target=str(fixture_file),
+        allow_destructive=True,
+        autofill_forms=False,
+        explore_modals=False,
+        click_wait_ms=80,
+    )
+    report_destruct = auditor_destruct.run_audit()
+    assert report_destruct["summary"]["safety_skipped_count"] == 0

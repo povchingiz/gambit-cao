@@ -31,7 +31,22 @@ Pass `--backend-log <path>` to tail the backend log file before and after each U
 cao-qa http://127.0.0.1:8000 --backend-log /tmp/backend.log
 ```
 
-### 3. Auto-Dispatch Discovered Bugs to `cao-fleet`
+### 3. Safety, Headed & Visual Screenshot Flags
+```bash
+# Safely audit without triggering destructive actions (delete, wipe, purge, drop) - DEFAULT
+cao-qa http://127.0.0.1:3000
+
+# Explicitly allow testing destructive actions if running against an ephemeral sandbox DB
+cao-qa http://127.0.0.1:3000 --allow-destructive
+
+# Run browser in a visible desktop window to watch Playwright click through the app
+cao-qa http://127.0.0.1:3000 --headed
+
+# Save visual screenshots of any broken interactions or errors with red element outlines
+cao-qa http://127.0.0.1:3000 --screenshots
+```
+
+### 4. Auto-Dispatch Discovered Bugs to `cao-fleet`
 Automatically enqueue remediation tasks into any registered fleet project (`llmaas`, `3DAang`, `nowait-study`, `dycom-demo`, `cao-crew`):
 ```bash
 cao-qa http://127.0.0.1:8080 --dispatch-project dycom-demo
@@ -44,6 +59,10 @@ cao-qa http://127.0.0.1:8080 --dispatch-project dycom-demo
 | Dimension | Heuristic / Check |
 |---|---|
 | **Broken Interactions** | Captures `console.error`, uncaught `pageerror`, failed `fetch`/`XHR` requests, HTTP `4xx`/`5xx` status codes with latency (ms), and correlated `--backend-log` errors per click. |
+| **Destructive Safety Guard** | Automatically identifies and skips destructive action controls (regex `delete`, `drop`, `wipe`, `purge`, `reset all`, `remove account`) unless `--allow-destructive` is set. |
+| **Smart Form Auto-Fill** | Detects input fields in parent/associated forms and auto-populates realistic mock data (valid email, password, phone, number) before clicking submit buttons so HTML5 client validation doesn't block the click. |
+| **2-Hop Modal Exploration** | When a click triggers a dialog or modal popup (`[role="dialog"]`, `<dialog>`), automatically identifies and clicks action buttons inside the dialog before cleanly closing it (`Escape` / close button). |
+| **Visual Issue Screenshots** | Automatically highlights any element triggering an error with a high-contrast red outline and saves a full-resolution PNG snapshot to the screenshots directory. |
 | **Redundant Controls** | Computes an effect signature `(api_endpoints, dom_delta_hash, nav_or_handler)` per control and flags multiple buttons/links on the same screen that perform the exact same action. |
 | **Silent Dead Clicks** | Flags enabled buttons/controls that produce zero DOM mutation, zero network call, zero URL change, and zero console/log activity when clicked. |
 | **Hit Target Ergonomics** | Flags interactive elements smaller than `24x24 px` (WCAG 2.2 AA target size minimum). |

@@ -4,8 +4,8 @@
 - **Page Title:** CBCT segmentation — automatic mapping of jaws, teeth and nerve canals — 2 scans, agreement with totalsegmentator · 0.8056
 - **Status:** **WARN** (Health Score: **90/100**)
 - **Browser Engine:** `/usr/bin/google-chrome`
-- **Audit Duration:** `20.89s`
-- **Timestamp:** `2026-10-22T13:04:21.960965+00:00`
+- **Audit Duration:** `20.42s`
+- **Timestamp:** `2026-10-22T16:18:37.622945+00:00`
 
 ## 1. Executive Summary
 
@@ -19,6 +19,10 @@
 | Unlabeled Controls (Missing A11y Name) | `0` |
 | Desktop Horizontal Overflow (`1440x900`) | `NO` |
 | Mobile Horizontal Overflow (`390x844`) | `NO` |
+| Destructive Actions Safely Skipped | `0` |
+| Forms Smartly Auto-filled | `0` |
+| Dialog / Modal Exploration Cycles | `0` |
+| Visual Issue Screenshots Saved | `0` |
 
 ## 2. Full-Stack Telemetry & Broken Interactions
 

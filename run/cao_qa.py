@@ -35,6 +35,11 @@ CHROME_CANDIDATES = [
     "/snap/bin/chromium",
 ]
 
+DESTRUCTIVE_PATTERN = re.compile(
+    r"\b(delete|drop|wipe|purge|destroy|truncate|reset\s*all|remove\s*account|clear\s*all|format|terminate|kill)\b",
+    re.IGNORECASE,
+)
+
 
 def find_browser_executable() -> Optional[str]:
     """Return the first available system Chrome/Chromium binary, or None to use Playwright's default."""
@@ -98,6 +103,10 @@ class ElementAuditRecord:
     backend_log_lines: List[str] = field(default_factory=list)
     backend_errors: List[str] = field(default_factory=list)
     action_signature: str = ""
+    safety_skipped: bool = False
+    form_autofilled: int = 0
+    modal_opened: bool = False
+    screenshot_path: str = ""
 
 
 class PlaywrightQAAuditor:
@@ -110,6 +119,11 @@ class PlaywrightQAAuditor:
         max_elements: int = 60,
         click_wait_ms: int = 180,
         headless: bool = True,
+        allow_destructive: bool = False,
+        autofill_forms: bool = True,
+        explore_modals: bool = True,
+        screenshots_dir: Optional[str] = None,
+        viewport_mode: str = "desktop",
     ):
         self.raw_target = target
         self.target_url = normalize_target_url(target)
@@ -117,6 +131,11 @@ class PlaywrightQAAuditor:
         self.max_elements = max_elements
         self.click_wait_ms = click_wait_ms
         self.headless = headless
+        self.allow_destructive = allow_destructive
+        self.autofill_forms = autofill_forms
+        self.explore_modals = explore_modals
+        self.screenshots_dir = Path(screenshots_dir).expanduser().resolve() if screenshots_dir else None
+        self.viewport_mode = viewport_mode
 
     def _read_backend_log_offset(self) -> int:
         if not self.backend_log_path or not self.backend_log_path.exists():
@@ -206,7 +225,10 @@ class PlaywrightQAAuditor:
                 "from cao_qa import PlaywrightQAAuditor; "
                 f"a = PlaywrightQAAuditor(target={repr(self.raw_target)}, "
                 f"backend_log_path={repr(str(self.backend_log_path) if self.backend_log_path else None)}, "
-                f"max_elements={self.max_elements}, click_wait_ms={self.click_wait_ms}, headless={self.headless}); "
+                f"max_elements={self.max_elements}, click_wait_ms={self.click_wait_ms}, headless={self.headless}, "
+                f"allow_destructive={self.allow_destructive}, autofill_forms={self.autofill_forms}, "
+                f"explore_modals={self.explore_modals}, screenshots_dir={repr(str(self.screenshots_dir) if self.screenshots_dir else None)}, "
+                f"viewport_mode={repr(self.viewport_mode)}); "
                 "print(json.dumps(a.run_audit()))"
             )
             res = subprocess.run(
@@ -396,6 +418,12 @@ class PlaywrightQAAuditor:
                 if rec.disabled:
                     continue
 
+                # 1. Destructive Safety Guard: skip destructive actions unless allow_destructive is True
+                ident_text = f"{rec.label} {rec.element_id} {rec.classes} {rec.title} {rec.aria_label} {rec.onclick}".lower()
+                if not self.allow_destructive and DESTRUCTIVE_PATTERN.search(ident_text):
+                    rec.safety_skipped = True
+                    continue
+
                 # Re-ensure data-cao-qa-idx exists if we reloaded page after a navigation
                 loc = page.locator(f'[data-cao-qa-idx="{rec.index}"]').first
                 if loc.count() == 0 and rec.element_id:
@@ -403,6 +431,39 @@ class PlaywrightQAAuditor:
 
                 if loc.count() == 0:
                     continue
+
+                # 2. Smart Form Auto-Fill: inject realistic data into parent/associated form before submit
+                if self.autofill_forms and (rec.tag == "button" or rec.tag == "input" or "submit" in rec.classes):
+                    try:
+                        filled_cnt = loc.evaluate("""(el) => {
+                            const form = el.closest('form') || el.closest('[data-form]') || el.form;
+                            if (!form) return 0;
+                            const inputs = form.querySelectorAll('input:not([type="hidden"]):not([disabled]), textarea, select');
+                            let count = 0;
+                            inputs.forEach(inp => {
+                                if (inp.value && String(inp.value).trim() !== '') return;
+                                const type = (inp.type || '').toLowerCase();
+                                const name = (inp.name || inp.id || '').toLowerCase();
+                                if (type === 'email' || name.includes('email')) inp.value = 'qa.test@example.com';
+                                else if (type === 'password' || name.includes('pass')) inp.value = 'QaP@ssw0rd!123';
+                                else if (type === 'number' || name.includes('num') || name.includes('count') || name.includes('age')) inp.value = '42';
+                                else if (type === 'tel' || name.includes('phone')) inp.value = '+1234567890';
+                                else if (type === 'url') inp.value = 'https://example.com';
+                                else if (type === 'checkbox' || type === 'radio') inp.checked = true;
+                                else if (inp.tagName.toLowerCase() === 'select') {
+                                    if (inp.options && inp.options.length > 1) inp.selectedIndex = 1;
+                                } else {
+                                    inp.value = name.includes('search') ? 'QA test query' : 'Test value';
+                                }
+                                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                                count++;
+                            });
+                            return count;
+                        }""")
+                        rec.form_autofilled = filled_cnt or 0
+                    except Exception:
+                        pass
 
                 # Reset per-click collectors
                 click_console_errors: List[str] = []
@@ -465,6 +526,30 @@ class PlaywrightQAAuditor:
                         rec.text_delta_preview = self._compute_text_delta(before_text, after_text)
                         rec.dom_delta_hash = after_hash
 
+                # 3. 2-Hop Modal / Dialog Exploration: if a modal opened, explore child actions then dismiss
+                if self.explore_modals and rec.dom_changed:
+                    try:
+                        modal_loc = page.locator('dialog[open], [role="dialog"], .modal.show, .modal.active, .modal[style*="display: block"]').first
+                        if modal_loc.count() > 0 and modal_loc.is_visible():
+                            rec.modal_opened = True
+                            child_btns = modal_loc.locator('button:not([disabled]), [role="button"]:not([aria-disabled="true"]), input[type="submit"]:not([disabled])').all()
+                            for cb in child_btns[:3]:
+                                try:
+                                    if cb.is_visible():
+                                        cb_text = (cb.inner_text() or cb.get_attribute("aria-label") or "").strip().lower()
+                                        if cb_text not in ("close", "cancel", "x", "✕", "dismiss"):
+                                            cb.click(timeout=1000)
+                                            page.wait_for_timeout(self.click_wait_ms)
+                                except Exception:
+                                    pass
+                            try:
+                                page.keyboard.press("Escape")
+                                page.wait_for_timeout(60)
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+
                 rec.network_events = [asdict(ev) for ev in click_network_events]
                 rec.console_errors = list(click_console_errors)
                 rec.console_warnings = list(click_console_warnings)
@@ -474,6 +559,19 @@ class PlaywrightQAAuditor:
                 backend_lines, backend_errs = self._read_backend_log_delta(log_offset)
                 rec.backend_log_lines = backend_lines
                 rec.backend_errors = backend_errs
+
+                # 4. Visual Evidence Capture: snapshot element with red outline if issue detected
+                has_issues = bool(rec.console_errors or rec.page_errors or [ev for ev in click_network_events if ev.failed] or rec.backend_errors)
+                if self.screenshots_dir and has_issues:
+                    try:
+                        shot_name = f"issue_{rec.index}_{rec.tag}_{int(time.time() * 1000) % 100000}.png"
+                        shot_path = self.screenshots_dir / shot_name
+                        self.screenshots_dir.mkdir(parents=True, exist_ok=True)
+                        loc.evaluate("(el) => { el.style.outline = '3px solid red'; el.style.boxShadow = '0 0 10px rgba(255,0,0,0.8)'; }")
+                        page.screenshot(path=str(shot_path))
+                        rec.screenshot_path = str(shot_path)
+                    except Exception:
+                        pass
 
                 # Build deterministic action signature for redundancy detection
                 api_sig = ",".join(
@@ -706,6 +804,20 @@ class PlaywrightQAAuditor:
                 )
 
         # 6. Synthesize Concrete UX Simplification Hints
+        safety_skipped = [
+            {
+                "index": rec.index,
+                "selector": rec.selector,
+                "label": rec.label or rec.aria_label or rec.title or rec.selector,
+                "recommendation": f"Destructive action '{rec.label or rec.selector}' was safely skipped (pass --allow-destructive to test).",
+            }
+            for rec in records
+            if rec.safety_skipped
+        ]
+        forms_autofilled_count = sum(1 for rec in records if rec.form_autofilled > 0)
+        modals_opened_count = sum(1 for rec in records if rec.modal_opened)
+        screenshots_saved = [rec.screenshot_path for rec in records if rec.screenshot_path]
+
         ux_simplification_hints: List[str] = []
         for rc in redundant_controls:
             ux_simplification_hints.append(rc["recommendation"])
@@ -775,6 +887,10 @@ class PlaywrightQAAuditor:
                 "redundant_control_groups_count": len(redundant_controls),
                 "small_targets_count": len(small_targets),
                 "unlabeled_controls_count": len(unlabeled_controls),
+                "safety_skipped_count": len(safety_skipped),
+                "forms_autofilled_count": forms_autofilled_count,
+                "modals_opened_count": modals_opened_count,
+                "screenshots_count": len(screenshots_saved),
                 "desktop_overflow": viewport_overflow.get("desktop", {}).get("has_overflow", False),
                 "mobile_overflow": viewport_overflow.get("mobile", {}).get("has_overflow", False),
             },
@@ -789,6 +905,8 @@ class PlaywrightQAAuditor:
                 "dead_clicks": dead_clicks,
                 "small_targets": small_targets,
                 "unlabeled_controls": unlabeled_controls,
+                "safety_skipped_controls": safety_skipped,
+                "screenshots": screenshots_saved,
                 "viewport_overflow": viewport_overflow,
                 "ux_simplification_hints": ux_simplification_hints,
             },
@@ -822,6 +940,10 @@ class PlaywrightQAAuditor:
             f"| Unlabeled Controls (Missing A11y Name) | `{s['unlabeled_controls_count']}` |",
             f"| Desktop Horizontal Overflow (`1440x900`) | `{'YES' if s['desktop_overflow'] else 'NO'}` |",
             f"| Mobile Horizontal Overflow (`390x844`) | `{'YES' if s['mobile_overflow'] else 'NO'}` |",
+            f"| Destructive Actions Safely Skipped | `{s.get('safety_skipped_count', 0)}` |",
+            f"| Forms Smartly Auto-filled | `{s.get('forms_autofilled_count', 0)}` |",
+            f"| Dialog / Modal Exploration Cycles | `{s.get('modals_opened_count', 0)}` |",
+            f"| Visual Issue Screenshots Saved | `{s.get('screenshots_count', 0)}` |",
             "",
         ]
 
