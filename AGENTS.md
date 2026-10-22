@@ -67,28 +67,25 @@ All AI agents operating in this repository MUST follow these rules:
 
 ---
 
-## 4. Key Commands Cheatsheet
+## 4. Key Commands Cheatsheet (Unified `crew` CLI)
 
-| Command | Purpose |
-|---|---|
-| `run/cao-doctor` | Pre-flight health check across tools, ports, logins, endpoints |
-| `run/cao-update` / `./update.sh` | Full update: sync git, re-patch site-packages, refresh symlinks, apply config, restart daemon, run doctor |
-| `run/cao-run` | Launch interactive multi-agent supervisor in `tmux` |
-| `run/cao-auto "<goal>"` | Run autonomous headless DAG pipeline with self-healing |
-| `run/cao-stop` | Cleanly terminate orchestrator daemon and background panes |
-| `run/cao-tokens` | Telemetry report: token consumption per worker and model |
-| `run/cao-fleet` | Workstation Fleet Conductor: cross-project status, inspect, and dispatch |
-| `run/cao-laya` | Laya System-1 reflex router: task-to-worker mapping & anti-babysitting gate |
-| `run/cao-sandbox` | Ephemeral git worktree sandbox creation, testing, and squash-merge |
-| `run/cao-qa` | Playwright Autonomous QA, Full-Stack Telemetry & UI/UX Ergonomics Auditor |
-| `run/cao-repair` | 1000x Autonomous Closed-Loop Self-Repair: audit -> worktree fix -> verify -> merge |
-| `run/cao-evolve` | Protected Prompt Self-Evolution Loop: Dual-Gate (Quality + Anti-Bloat) harness |
-| `run/cao-init` | 1-Click setup wizard: auto-detect CLIs, generate tailored config, apply profiles |
-| `run/cao-limits` | TokenMaster quota sensor: remaining requests & reset windows |
-| `run/cao-monitor` | Live terminal task board viewer |
-| `run/cao-aggressive` | Run 5-vector audit gate and generate `stress-test.sh` |
-| `./setup/3_apply/apply.sh` | Compile configs & register worker profiles with CAO daemon |
-| `uv run --with pytest pytest tests/` | Execute orchestrator test suite (83 unit & integration tests) |
+The entire orchestrator is consolidated into the unified **`crew`** (or `cao-crew`) entrypoint:
+
+| Command | Shorthand | Purpose |
+|---|---|---|
+| `crew status` | `cao-crew status` | **Unified Workstation Dashboard:** fleet projects, active tasks, token spend & provider quotas |
+| `crew fleet` | `cao-fleet` | Workstation Fleet Conductor: cross-project overview, inspect, and dispatch (`--to <project>`) |
+| `crew test <url>` | `cao-qa` | Playwright Autonomous QA, Full-Stack Telemetry & UI/UX Ergonomics Auditor |
+| `crew repair <target>` | `cao-repair` | 1000x Autonomous Closed-Loop Self-Repair: audit -> worktree sandbox fix -> verify -> merge |
+| `crew run` | `cao-run` | Launch interactive multi-agent supervisor in `tmux` (auto-fallback & prompt deadlock guards) |
+| `crew terminal` | `tmux attach` | Attach directly to the interactive conversational fleet supervisor pane |
+| `crew auto "<goal>"` | `cao-auto` | Autonomous headless DAG pipeline with self-healing, watchdog, and anti-tampering |
+| `crew stop` | `cao-stop` | Cleanly terminate orchestrator daemon and background panes |
+| `crew sandbox` | `cao-sandbox` | Ephemeral git worktree sandbox creation, testing, and squash-merge |
+| `crew evolve <worker>` | `cao-evolve` | Protected Prompt Self-Evolution Loop: Dual-Gate (Quality + Anti-Bloat) harness |
+| `crew doctor` | `cao-doctor` | Pre-flight health check across tools, ports, logins, endpoints (`--init` for wizard) |
+| `./setup/3_apply/apply.sh` | — | Compile configs & register worker profiles with CAO daemon |
+| `uv run --with pytest pytest tests/` | — | Execute orchestrator test suite (86 unit & integration tests) |
 
 ---
 
