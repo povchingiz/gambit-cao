@@ -48,12 +48,13 @@ Explain the two primary ways to run:
 
 All AI agents operating in this repository MUST follow these rules:
 
-1. **`wcao/` is the Single Source of Truth for Agent Artifacts:**
-   - Implementation plans: `wcao/plans/YYYY-MM-DD-<slug>.md`
-   - Active status & immediate tasks: `wcao/plans/now.md`
-   - Architecture & sequence diagrams: `wcao/design/`
-   - Verification reports & stress harnesses: `wcao/audit/`
+1. **`wgambit/` (with `wcao/` alias) is the Single Source of Truth for Agent Artifacts:**
+   - Implementation plans: `wgambit/plans/YYYY-MM-DD-<slug>.md`
+   - Active status & immediate tasks: `wgambit/plans/now.md`
+   - Architecture & sequence diagrams: `wgambit/design/`
+   - Verification reports & stress harnesses: `wgambit/audit/`
    - *DO NOT create loose markdown plans or state files in the root directory.*
+   - Legacy `wcao/` is automatically linked to `wgambit/` for 100% backwards compatibility (`gambit migrate`).
 
 2. **Configuration Workflow (Never edit rendered files directly!):**
    - Edit worker definitions, models, or endpoints in: [`setup/2_configure/cao.config.toml`](setup/2_configure/cao.config.toml)
