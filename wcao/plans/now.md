@@ -1,75 +1,65 @@
-# now.md — wcao · active focus
+# now.md — GAMBIT · Active Operations
 
-> **Branch:** `1000x`
-> **Active Plan:** 1000x Workstation Fleet Conductor & Laya Routing Engine
+> **Fleet Status:** ♜ The Rook Orchestrator active | 3 Knights deployed in parallel
+> **Branch:** `1000x` (Synchronized with `origin`: `https://github.com/povchingiz/gambit-cao.git`)
 > **Rule:** NEVER run `git push` without explicit user confirmation.
 
 ---
 
-## ✅ What's Done (Milestone 1000x: Fleet Conductor & Sandboxes)
+## ♜ GAMBIT Architecture & Chess Taxonomy
 
-- **Workstation Fleet Conductor (`cao-fleet`)**: Live multi-project status tracking, task inspection, and cross-project dispatching across `llmaas`, `3DAang`, `nowait-study`, `dycom-demo`, and `cao-crew` (`run/cao_fleet.py`, `run/cao-fleet`, `tests/test_fleet.py`).
-- **Laya System-1 Intent & Risk Router (`cao-laya`)**: Zero-overhead rule-based intent router mapping tasks to optimal worker engines (`claude_worker`, `coder_worker`, `codex_worker`, `antigravity_worker`, `analyst_worker`) and anti-babysitting reflex gate (`run/cao_laya_router.py`, `run/cao-laya`, `tests/test_laya.py`).
-- **Autonomous Laya Binding in `cao-auto`**: Dynamic worker and model binding in headless DAG execution (`run/cao_auto.py`).
-- **Git Worktree Isolation Sandboxes (`cao-sandbox`)**: Ephemeral speculative execution in `wcao/sandboxes/<worker>` with automated squash-merge upon test verification (Milestone P6.3 complete: `run/cao_worktree.py`, `run/cao-sandbox`, `tests/test_worktree.py`).
-- **Cross-Project Workstation Memory**: Shared episodic knowledge layer in `~/.cao/fleet_memory.sqlite` accessible via `cao-memory --fleet` and auto-recalled in `cao-auto`.
-- **Milestone 6 Production Resilience (`P6.1`, `P6.3`, `P6.4`, `P6.6`)**:
-  - `P6.1` Watchdog (900s wall-clock) & stdout stagnation (180s) detection with fallback self-healing in `run/cao_auto.py`.
-  - `P6.4` Port 9889 stale/zombie daemon self-healing (`heal_stale_daemon` in `run/cao_lib.py` & wired into `run/cao-run`).
-  - `P6.6` Episodic memory pruning & FTS5 optimization (`prune_memories`, `vacuum_memory` in `run/cao_memory.py` & `run/cao-memory`).
-- [x] **Playwright Autonomous Full-Stack QA & UI/UX Auditor (`cao-qa`)**: Comprehensive Playwright auditing engine (`run/cao_qa.py`, `run/cao-qa`, `tests/test_cao_qa.py`, `wcao/skills/playwright-qa-ux-auditor.md`) featuring full-stack log correlation, destructive action safety guards, smart form auto-filling, 2-hop modal exploration, visual error screenshots with high-contrast outlines, dual-viewport testing (Desktop & Mobile), and direct `cao-fleet` remediation dispatch.
-- **77/77 test suite passing**: Full unit & integration coverage across all modules.
+- **The Grandmaster (User):** Defines strategic objectives, holds final safety confirmation gate.
+- **The Rook (`gambit` / `cao-crew`):** Master fleet orchestrator, autonomous DAG pipeline, sandbox isolation, self-repair.
+- **The Knights (Specialized Projects):**
+  - ♘ **Knight 1 (`dycom-demo`):** Dental AI & 3D CBCT Segmentation (ToothFairy2, E2E Clinical Calculations).
+  - ♘ **Knight 2 (`llmaas`):** SOTA LLM/GPU Inference & Real-Time Low-Latency Streaming Speech Lab.
+  - ♘ **Knight 3 (`3DAang`):** 3D Avatar Generation (Photo-to-ARKit 52 Blendshapes) & Real-Time Three.js WebGL.
+- **The Bishops (Specialized Engines):** Claude (Architecture), Codex/OpenCode (Implementation), Antigravity/Gemini (Codebase & Multimodal Analysis), Hermes (Local Reasoning).
+- **The Pawns:** Atomic execution steps, AST anti-tampering guards, telemetry probes.
 
 ---
 
-## ✅ What's Done (Milestones 1–5)
+## ⚡ Active Parallel Missions (Launched via Subagents)
 
-All shipped — see [`archive/`](archive/) for historical specs.
+### 1. ♘ Knight 1: `dycom-demo` — E2E Clinical Pipeline & Safety Buffer
+- **Directory:** `/home/user/Desktop/Chingiz/dycom-demo` (`feat/e2e-clinical-pipeline`)
+- **Objectives:**
+  - 2mm Mandibular Alveolar Canal safety buffer tube and 3D collision detection (`nerve_buffer.py`).
+  - Misch Bone Density HU Profiler (D1–D5) for implant bed site analysis (`bone_density.py`).
+  - Metal Artifact Reduction (MAR) streak filter (`mar_filter.py`).
+  - Full E2E pipeline integration (`pipeline.py`) exporting clinical JSON reports + STL geometries.
+  - Competitor benchmark & killer features document (`docs/COMPETITORS_AND_KILLER_FEATURES.md`).
+  - 100% test pass rate in `tests/`.
 
-- Core provisioner, prompt renderer, MCP inheritance, tmux lifecycle
-- `cao-auto` autonomous DAG dispatcher + Telegram telemetry
-- Universal 429 fallback / TokenMaster quota routing
-- `cao-limits` CLI — live quota inspector (visual utilization bars)
-- Repo root detection, scoped tmux sessions, `cao-stop --project`
-- Context compactor (Hermes 50% rule) — `cao_compactor.py`
-- Procedural memory (`wcao/skills/`) + SQLite FTS5 episodic memory
-- `hermes_worker` engine integration + conformance test suite
-- `cao-plan` goal decomposer → cycle-free DAG in `wcao/tasks.json`
-- Anti-test-tampering gate (`cao_tamper.py`)
-- `cao-run` fix: early symlink resolution prevents `$HERE: unbound variable` crash ([`wcao/plans/2026-09-22-cao-run-fix.md`](2026-09-22-cao-run-fix.md))
-- Shorthand supervisor flag: `--sv <engine>` (`agy`, `codex`, `claude`, `opencode`, `hermes`) in `run/cao-run`
-- `code_supervisor.md` prompt streamlined to strict orchestration-only mandate
-- Configured bulk models for OpenCode (`Kimi-K3`, `GLM-5.3`, `DeepSeek-V4-Pro`)
-- 58/58 test suite passing (`tests/test_cao_run_flags.py`)
-- Orca ADE architecture comparison & backlog mapped
+### 2. ♘ Knight 2: `llmaas` — Speech Streaming Lab & Frontier Research
+- **Directory:** `/home/user/Desktop/Chingiz/llmaas` (`feat/speech-frontier-lab`)
+- **Objectives:**
+  - Ultra-low latency streaming STT engine (`src/speech/stt_streamer.py`).
+  - Ultra-fast streaming TTS engine with Kokoro-82M / Piper architecture (`src/speech/tts_kokoro.py`).
+  - 52 ARKit blendshape viseme mapper & 60 FPS timestamped stream (`src/speech/viseme_streamer.py`).
+  - Full-duplex WebSocket speech server (`src/speech/ws_server.py`).
+  - Frontier optimization benchmarks & deep dive (`experiments/frontier/`, `docs/FRONTIER_OPTIMIZATION.md`).
+  - Unit test suite in `tests/speech/`.
 
----
-
-## 🔥 Prioritized Task Queue
-
-- [x] **[antigravity_worker]** Implement cao-qa Playwright Autonomous QA, Full-Stack Log Correlator & UI/UX Redundancy Auditor CLI and Skill (wcao/plans/2026-10-22-playwright-qa-ux-auditor.md) *(Model: gemini-3.8-flash-high)* — Milestone 6: Production Resilience
-
-- [x] **P6.1 Watchdog & Stagnation Detection** — max 900s wall-clock + 180s stdout stagnation in [`run/cao_auto.py`](../../run/cao_auto.py)
-- [x] **P6.2 CLI Prompt Deadlock Prevention** — non-interactive flags (`CI=1`, `DEBIAN_FRONTEND=noninteractive`, `GIT_TERMINAL_PROMPT=0`) in [`run/cao-run`](../../run/cao-run) + prompt deadlock detector in [`run/cao_auto.py`](../../run/cao_auto.py)
-- [x] **P6.4 Port 9889 Self-Healing** — health-check probe + zombie daemon cleanup in [`run/cao-run`](../../run/cao-run)
-- [x] **P6.5 Setup Wizard `cao-init`** — 1-click auto-detect CLIs, generate tailored `cao.config.toml`, compile via `apply.sh` ([`run/cao_init.py`](../../run/cao_init.py))
-- [x] **P6.6 Memory Pruning** — `cao-memory prune` / `vacuum` subcommands to prevent memory dilution
-- [x] **P6.3 Git Worktree Isolation** — `WorktreeManager` in [`run/cao_worktree.py`](../../run/cao_worktree.py) for parallel workers
-- [x] **1000x Autonomous Closed-Loop Self-Healing (`cao-repair`)** — End-to-end bug discovery, sandbox worktree isolation, surgical remediation, re-audit verification & auto-squash merge ([`run/cao_repair.py`](../../run/cao_repair.py), [`run/cao-repair`](../../run/cao-repair))
-- [x] **Self-Evolving Agent Harness (`cao-evolve`)** — Protected Prompt Self-Evolution Loop: root-cause error clustering, anti-bloat prompt synthesis, Dual-Gate verification (Gate 1: Quality / 100% test pass rate + Gate 2: Performance / Token Budget Protection) ([`run/cao_evolve.py`](../../run/cao_evolve.py), [`run/cao-evolve`](../../run/cao-evolve))
-- [x] **Unified CLI & Conversational Fleet Terminal (`crew` / `cao-crew`)** — Consolidated 17 loose scripts into 1 unified binary with intuitive subcommands (`crew status`, `crew fleet`, `crew test`, `crew repair`, `crew run`, `crew terminal`, `crew evolve`) ([`run/cao_crew_cli.py`](../../run/cao_crew_cli.py), [`run/crew`](../../run/crew), [`run/cao-crew`](../../run/cao-crew))
+### 3. ♘ Knight 3: `3DAang` — Modernized Photo-to-3D Avatar & WebGL Engine
+- **Directory:** `/home/user/Desktop/Maksat/3DAang` (`feat/arkit-avatar-webgl`)
+- **Objectives:**
+  - Git repository initialization and clean hygiene (`.gitignore`, legacy isolation).
+  - Photo-to-3D-head builder with 52 ARKit blendshapes (`avatar_engine/avatar_builder.py`, `blendshape_rig.py`).
+  - Real-time Three.js WebGL canvas client (`web_viewer/`) with lifelike blinking, breathing, and zero-lag (< 100ms) viseme-to-mouth synchronization.
+  - Eliminating the slow legacy 10-15s Wav2Lip video generation bottleneck (`docs/AVATAR_ARCHITECTURE.md`).
+  - Unit tests in `tests/`.
 
 ---
 
-## 🚀 86/86 Test Suite Passing
-Full unit & integration test coverage across the entire system.
+## ✅ Completed Milestones
 
----
+- **92/92 Unit & Integration Tests Passing** in `tests/`.
+- **Unified `gambit` CLI**: Space syntax (`gambit status`, `gambit fleet`, `gambit test`) and dash syntax (`gambit-status`, etc.).
+- **Natural Language Mission Dispatch**: `gambit "diagnose and fix"` automatically executes via Laya routing.
+- **Grandmaster Confirmation Gate**: Playwright QA-UIX auditor verifies with the user `[y/N]` before launching heavy browser runs.
+- **GitHub Remote Synchronized**: `main` and `1000x` cleanly pushed to `https://github.com/povchingiz/gambit-cao.git`.
+- **Consolidation of `llmaas`**: Absorbed `nowait-study` and `token-audit` with 382 passing tests.
+- **Client-Side WebWorker DICOM Loader**: Built in `dycom-demo` with progressive 96³ LOD and binary STL exporter.
 
-## 🔮 Backlog: Orca (`stablyai/orca`) Feature Adoptions
-
-- [ ] **Automated Worktree Lifecycle** — Task-level worktree provision (`git worktree add`), branch isolation, and auto-squash merge upon passing verification.
-- [ ] **UI Context Capture ("Design Mode")** — Lightweight CLI/browser hook extracting live DOM element, CSS styles, and viewport screenshot directly into `codex_worker` prompt.
-- [ ] **TokenMaster Multi-Account Rotation** — Hot-swap API keys/profiles across multiple accounts of the same provider on 429 before cross-tier downgrade.
-- [ ] **Remote SSH Worktree Workers** — Run heavy workers (e.g. local vLLM / Hermes) on remote GPU machines over SSH worktrees while managing locally.
 
