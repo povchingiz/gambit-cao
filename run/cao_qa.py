@@ -40,6 +40,34 @@ DESTRUCTIVE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+SECRET_LEAK_PATTERNS = [
+    ("OpenAI API Key", re.compile(r"\b(sk-[a-zA-Z0-9_\-]{20,})\b")),
+    ("Anthropic API Key", re.compile(r"\b(sk-ant-[a-zA-Z0-9_\-]{20,})\b")),
+    ("AWS Access Key ID", re.compile(r"\b(AKIA[0-9A-Z]{16})\b")),
+    ("Private Key Header", re.compile(r"-----BEGIN (?:RSA |EC )?PRIVATE KEY-----")),
+    ("Bearer / JWT Token", re.compile(r"\b(ey[a-zA-Z0-9_-]{15,}\.ey[a-zA-Z0-9_-]{15,})\b")),
+    ("Database URI with Password", re.compile(r"\b((?:postgres|mongodb|mysql|redis)://[^:\s]+:[^@\s]+@[^\s/]+)\b")),
+    (".env Variable Leak", re.compile(r"\b(API_KEY|SECRET_KEY|DATABASE_PASSWORD|AWS_SECRET_ACCESS_KEY)\s*=\s*['\"]?([^'\"\s\n]{8,})['\"]?", re.IGNORECASE)),
+]
+
+
+def scan_secrets(text: str, source_label: str) -> List[Dict[str, str]]:
+    """Scan text for credentials and secrets, redacting sensitive content."""
+    findings = []
+    if not text or len(text) < 8:
+        return findings
+    for label, pat in SECRET_LEAK_PATTERNS:
+        for match in pat.finditer(text):
+            val = match.group(0)
+            redacted = val[:7] + "..." + val[-3:] if len(val) > 12 else val[:3] + "..."
+            findings.append({
+                "kind": label,
+                "source": source_label,
+                "preview": redacted,
+                "recommendation": f"Remove sensitive credential ({label}) exposed in {source_label}.",
+            })
+    return findings
+
 
 def find_browser_executable() -> Optional[str]:
     """Return the first available system Chrome/Chromium binary, or None to use Playwright's default."""
@@ -276,6 +304,8 @@ class PlaywrightQAAuditor:
             active_page_errors: List[str] = initial_page_errors
             active_network_events: List[NetworkEvent] = []
             req_start_times: Dict[int, float] = {}
+            secret_leaks: List[Dict[str, Any]] = []
+            cors_issues: List[Dict[str, Any]] = []
 
             def _on_console(msg):
                 mtype = msg.type
@@ -286,6 +316,10 @@ class PlaywrightQAAuditor:
                     active_console_warnings.append(text)
                 else:
                     active_console_logs.append(text)
+                # QA-UIX Security: Scan console messages for leaked credentials
+                leaks = scan_secrets(text, f"console.{mtype}")
+                if leaks:
+                    secret_leaks.extend(leaks)
 
             def _on_pageerror(exc):
                 active_page_errors.append(str(exc))
@@ -306,6 +340,23 @@ class PlaywrightQAAuditor:
                         failed=resp.status >= 400,
                     )
                 )
+
+                # QA-UIX Security: CORS inspection
+                headers = resp.headers
+                allow_origin = headers.get("access-control-allow-origin", "")
+                allow_creds = headers.get("access-control-allow-credentials", "").lower()
+                if allow_origin == "*" and allow_creds == "true":
+                    cors_issues.append({
+                        "url": resp.url,
+                        "issue": "Wildcard Origin with Credentials",
+                        "detail": "Access-Control-Allow-Origin: * combined with Access-Control-Allow-Credentials: true permits cross-origin credential theft.",
+                        "recommendation": f"Configure backend route {urlparse(resp.url).path} to restrict origins to explicit trusted domains.",
+                    })
+
+                # QA-UIX Security: Scan URL for leaked tokens/secrets
+                url_leaks = scan_secrets(resp.url, f"API URL: {resp.url}")
+                if url_leaks:
+                    secret_leaks.extend(url_leaks)
 
             def _on_requestfailed(req):
                 t0 = req_start_times.pop(id(req), time.time())
@@ -335,6 +386,15 @@ class PlaywrightQAAuditor:
             # 1. Navigate to target URL
             page.goto(self.target_url, wait_until="domcontentloaded", timeout=20000)
             page.wait_for_timeout(200)
+
+            # QA-UIX Security: Scan initial DOM content for exposed API keys, tokens, and .env leaks
+            try:
+                dom_source = page.content()
+                dom_leaks = scan_secrets(dom_source, "DOM source / inline scripts")
+                if dom_leaks:
+                    secret_leaks.extend(dom_leaks)
+            except Exception:
+                pass
 
             page_title = page.title()
             base_url = page.url
@@ -624,6 +684,8 @@ class PlaywrightQAAuditor:
             initial_network_failures=initial_network_failures,
             browser_executable=executable_path or "playwright-chromium",
             duration_s=duration_s,
+            secret_leaks=secret_leaks,
+            cors_issues=cors_issues,
         )
 
     @staticmethod
@@ -701,7 +763,11 @@ class PlaywrightQAAuditor:
         initial_network_failures: List[Dict[str, Any]],
         browser_executable: str,
         duration_s: float,
+        secret_leaks: Optional[List[Dict[str, Any]]] = None,
+        cors_issues: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
+        secret_leaks = secret_leaks or []
+        cors_issues = cors_issues or []
         redundant_controls: List[Dict[str, Any]] = []
         dead_clicks: List[Dict[str, Any]] = []
         broken_interactions: List[Dict[str, Any]] = []
@@ -819,6 +885,14 @@ class PlaywrightQAAuditor:
         screenshots_saved = [rec.screenshot_path for rec in records if rec.screenshot_path]
 
         ux_simplification_hints: List[str] = []
+        for leak in secret_leaks:
+            ux_simplification_hints.append(
+                f"CRITICAL SECURITY: {leak['kind']} exposed in {leak['source']} ({leak['preview']}). {leak['recommendation']}"
+            )
+        for c in cors_issues:
+            ux_simplification_hints.append(
+                f"CORS VULNERABILITY: {c['issue']} on {c['url']}. {c['recommendation']}"
+            )
         for rc in redundant_controls:
             ux_simplification_hints.append(rc["recommendation"])
         for dc in dead_clicks:
@@ -858,10 +932,12 @@ class PlaywrightQAAuditor:
             + len(redundant_controls) * 8
             + len(small_targets) * 5
             + len(unlabeled_controls) * 5
+            + len(secret_leaks) * 35
+            + len(cors_issues) * 20
             + sum(10 for vp in viewport_overflow.values() if vp.get("has_overflow"))
         )
         score = max(0, 100 - deductions)
-        if broken_interactions:
+        if broken_interactions or secret_leaks or cors_issues:
             status = "FAIL"
         elif dead_clicks or redundant_controls or small_targets or unlabeled_controls or any(
             vp.get("has_overflow") for vp in viewport_overflow.values()
@@ -891,6 +967,8 @@ class PlaywrightQAAuditor:
                 "forms_autofilled_count": forms_autofilled_count,
                 "modals_opened_count": modals_opened_count,
                 "screenshots_count": len(screenshots_saved),
+                "secret_leaks_count": len(secret_leaks),
+                "cors_issues_count": len(cors_issues),
                 "desktop_overflow": viewport_overflow.get("desktop", {}).get("has_overflow", False),
                 "mobile_overflow": viewport_overflow.get("mobile", {}).get("has_overflow", False),
             },
@@ -907,6 +985,8 @@ class PlaywrightQAAuditor:
                 "unlabeled_controls": unlabeled_controls,
                 "safety_skipped_controls": safety_skipped,
                 "screenshots": screenshots_saved,
+                "secret_leaks": secret_leaks,
+                "cors_issues": cors_issues,
                 "viewport_overflow": viewport_overflow,
                 "ux_simplification_hints": ux_simplification_hints,
             },
@@ -944,6 +1024,8 @@ class PlaywrightQAAuditor:
             f"| Forms Smartly Auto-filled | `{s.get('forms_autofilled_count', 0)}` |",
             f"| Dialog / Modal Exploration Cycles | `{s.get('modals_opened_count', 0)}` |",
             f"| Visual Issue Screenshots Saved | `{s.get('screenshots_count', 0)}` |",
+            f"| Secret & Token Leaks Detected | `{s.get('secret_leaks_count', 0)}` |",
+            f"| Insecure CORS Configurations | `{s.get('cors_issues_count', 0)}` |",
             "",
         ]
 
@@ -1011,8 +1093,20 @@ class PlaywrightQAAuditor:
                     )
         lines.append("")
 
+        # Security, Secrets & CORS
+        lines.append("## 6. Security, Secrets & CORS Audit")
+        lines.append("")
+        if not h.get("secret_leaks") and not h.get("cors_issues"):
+            lines.append("No sensitive credentials, API keys, or insecure wildcard CORS configurations detected in DOM, console, or network traces.")
+        else:
+            for leak in h.get("secret_leaks", []):
+                lines.append(f"- 🚨 **Secret Exposed ({leak['kind']}):** Found in `{leak['source']}` (`{leak['preview']}`). {leak['recommendation']}")
+            for c in h.get("cors_issues", []):
+                lines.append(f"- 🌐 **CORS Issue ({c['issue']}):** `{c['url']}`. {c['detail']} {c['recommendation']}")
+        lines.append("")
+
         # UX Simplification Hints
-        lines.append("## 6. Actionable UX Simplification & Remediation Plan")
+        lines.append("## 7. Actionable UX Simplification & Remediation Plan")
         lines.append("")
         if not h["ux_simplification_hints"]:
             lines.append("- UI is clean, responsive, and free of redundant or dead controls.")

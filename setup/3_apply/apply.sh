@@ -94,7 +94,7 @@ if nc -z 127.0.0.1 9889 >/dev/null 2>&1; then
   printf '\n'
   if [ "$ASSUME_YES" = "y" ]; then
     ans="y"
-  elif [ ! -t 0 ]; then
+  elif [ ! -t 0 ] || [ "${CI:-0}" = "1" ] || [ "${DEBIAN_FRONTEND:-}" = "noninteractive" ]; then
     ans="N"
   else
     read -r -p "cao-server is running. Restart it to apply changes? [y/N] " ans

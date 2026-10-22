@@ -76,6 +76,10 @@ def print_terminal_summary(report: dict, md_path: Path, json_path: Path):
         print(f"  🪟 Modal / Dialog Exploration Cycles:                {s['modals_opened_count']}")
     if s.get("screenshots_count", 0) > 0:
         print(f"  📸 Visual Issue Screenshots Captured:                {s['screenshots_count']}")
+    if s.get("secret_leaks_count", 0) > 0:
+        print(f"  🚨 Secrets Leaked (DOM/Console/Network):             {s['secret_leaks_count']} (CRITICAL VULNERABILITY)")
+    if s.get("cors_issues_count", 0) > 0:
+        print(f"  🌐 Insecure CORS Configurations:                     {s['cors_issues_count']}")
     print("-" * 88)
     if h["ux_simplification_hints"]:
         print("💡 Top UX Simplification & Remediation Hints:")

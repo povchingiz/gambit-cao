@@ -143,6 +143,8 @@ if command -v tmux >/dev/null 2>&1; then
   tmux setenv -g HOMEBREW_NO_AUTO_UPDATE "1" >/dev/null 2>&1 || true
   tmux setenv -g PAGER "cat" >/dev/null 2>&1 || true
   tmux setenv -g npm_config_yes "true" >/dev/null 2>&1 || true
+  # Ensure crew and cao-crew tools are available inside worker panes
+  tmux setenv -g PATH "$HOME/.local/bin:$HERE:$PATH" >/dev/null 2>&1 || true
 fi
 
 # 3. Pick the supervisor provider.

@@ -1,19 +1,24 @@
-# CAO-Crew — Autonomous CLI Agent Orchestrator
+# CAO-Crew (`crew`) — Unified Autonomous AI Engineering Fleet
 
-> **Orchestrate your frontier AI coding CLI engines into a cohesive, self-learning engineering squad.**
+> **Orchestrate your frontier AI coding CLI engines into an autonomous, self-evolving, closed-loop engineering squad.**
 
 [![Interactive Deck](https://img.shields.io/badge/Presentation%20Deck-16%20Slides-6366f1?style=flat-square&logo=googleslides&logoColor=white)](https://povchingiz.github.io/cao-crew/)
 [![Sequence Diagram](https://img.shields.io/badge/Architecture-Sequence%20Diagram-06b6d4?style=flat-square&logo=diagramsdotnet&logoColor=white)](https://povchingiz.github.io/cao-crew/#16)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-86%20Passing-emerald)](tests/)
 
 ---
 
 ## TL;DR
 
-> **`cao-crew` turns your fragmented terminal AI tools (`claude`, `codex`, `agy`, `opencode`, `copilot`, `hermes`) into an autonomous, quota-aware engineering squad managed inside background `tmux` sessions.**
+> **`cao-crew` (CLI: `crew`) turns your fragmented terminal AI tools (`claude`, `codex`, `agy`, `opencode`, `copilot`, `hermes`) into an autonomous, quota-aware, self-repairing engineering squad managed inside background `tmux` sessions.**
 
-* 💰 **Economic Asymmetry:** The expensive model (Claude) designs architecture and reviews PRs; cheap/local models (OpenCode, DeepSeek, Hermes) write bulk boilerplate; Gemini/Antigravity ingests massive 1M+ token repo contexts; Copilot (*in progress / WIP*) drafts GitHub PRs, Actions, and cloud deploy configs.
+* 🛸 **Unified `crew` Command Line:** 8 clean verbs (`crew status`, `crew fleet`, `crew test`, `crew repair`, `crew run`, `crew terminal`, `crew auto`, `crew evolve`) replace dozens of fragmented scripts.
+* 💰 **Economic Asymmetry:** The expensive model (Claude) designs architecture and reviews PRs; cheap/local models (OpenCode, DeepSeek, Hermes) write bulk boilerplate; Gemini/Antigravity ingests massive 1M+ token repo contexts; Copilot drafts GitHub PRs, Actions, and cloud deploy configs.
+* 🧪 **5-Vector Full-Stack QA-UIX (`crew test`):** Autonomous Playwright auditor testing DOM ergonomics (viewport overflow, dead buttons, redundant text), frontend JS telemetry, backend/network payloads, CORS cross-origin security, and credential/secret leak exposure.
+* 🔄 **1000x Closed-Loop Self-Repair (`crew repair`):** Detects regressions, spins up an isolated ephemeral git worktree sandbox, escalates to reasoning architects, verifies fixes against tests, and squash-merges automatically.
+* 🧬 **Protected Prompt Self-Evolution (`crew evolve`):** Automatically upgrades worker system prompts against benchmark tasks using a **Dual-Gate Harness** (Quality Gate + Anti-Bloat Gate) with automatic golden rollback protection.
 * 🔑 **Zero Subscription Tax:** Authenticate once natively in your terminal (`claude /login`, `codex login`, `agy`, `gh auth login`). CAO connects directly to your existing authenticated CLI sessions — no proxying, no extra SaaS markups, no token leakage.
-* 🛡️ **Autonomous Self-Healing:** Headless DAG task execution (`cao-auto`) with AST-based anti-tampering guards, 5-vector verification audit, and auto-generated load stress testing (`wcao/audit/stress-test.sh`).
 * 🧠 **Persistent Memory Standard (`wcao/`):** SQLite FTS5 episodic storage + `wcao/plans/now.md` checkpoints ensure full context preservation across reboots, crashes, and model switches.
 
 ```bash
@@ -25,17 +30,18 @@ git clone git@github.com:povchingiz/cao-crew.git ~/cao-crew && cd ~/cao-crew
 
 ### Quick Navigation
 * ⚡ **[TL;DR](#tldr)** — 30-second summary: architecture, economic asymmetry, and quickstart
+* 🎮 **[Unified `crew` CLI Cheatsheet](#unified-crew-command-cheatsheet)** — one command to rule the entire fleet
+* 🧪 **[5-Vector Full-Stack QA-UIX](#5-vector-full-stack-qa-uix-engine-crew-test)** — DOM ergonomics, console telemetry, payloads, CORS & secrets
+* 🔄 **[Closed-Loop Self-Repair](#autonomous-closed-loop-self-repair-crew-repair)** — isolated worktree sandboxes, automated diagnosis & merge
+* 🧬 **[Protected Prompt Self-Evolution](#protected-prompt-self-evolution-crew-evolve)** — Dual-Gate prompt optimization & regression protection
 * 🤖 **[AI Assistant Onboarding](#-first-time-let-your-ai-assistant-guide-you)** — ask your AI agent to set up cao-crew automatically (`AGENTS.md` standard)
 * 🌐 **[Interactive Slides](https://povchingiz.github.io/cao-crew/)** — 16 bilingual slides (RU/EN), dark/light mode, and rival benchmarks
 * 🔄 **[Execution Sequence Diagram](https://povchingiz.github.io/cao-crew/#16)** — native visual trace from North Star goal to verified commit
 * ⚠️ **[The Problem](#the-problem)** — 6 fatal flaws of single-agent and uncoordinated coding
 * 🧩 **[The Solution](#the-solution-a-unified-engineering-squad)** — specialist workforce, economic asymmetry, and DAG execution
-* ⚡ **[Core Capabilities](#core-capabilities-at-a-glance)** — multi-engine swarm, 50% context compactor, TokenMaster quota sensors
-* 📋 **[Command Cheatsheet](#command-cheatsheet)** — quick reference for `cao-run`, `cao-plan`, `cao-auto`, `cao-limits`
 * 🚀 **[Installation & Setup](#1-install-once)** — 5-minute bootstrap and configuration
 * 🧠 **[Hermes Learning & Memory](#hermes-learning--memory-system)** — SQLite FTS5 episodic storage and now.md checkpoints
 * 🛡️ **[Autonomous Self-Healing](#autonomous-execution--self-healing-cao_auto)** — AST anti-tampering, 5-vector audit gate, and L2 escalation
-* 🔬 **[Audit & Stress-Testing Docs](wcao/docs/AUDIT_AND_STRESS_TESTING.md)** — 5-vector verification gate, threat analysis, and auto-generated load harness (`wcao/audit/stress-test.sh`)
 
 ---
 
@@ -133,32 +139,116 @@ index.html      the deck (served by GitHub Pages)
 Edit only in `setup/2_configure/`. Everything else is machinery. Never edit the live
 files under `~/.aws` or `~/.config` directly — they are generated.
 
-## Command cheatsheet
+## Unified `crew` Command Cheatsheet
 
-Every command takes `-h`/`--help`. Nothing here needs arguments to start.
+The entire orchestrator is consolidated into the unified **`crew`** (alias: `cao-crew`) entrypoint. All commands support `-h`/`--help` and have dedicated single-purpose subcommands. Legacy `cao-*` commands remain fully functional as direct aliases.
 
-| Command | What it does |
-|---------|--------------|
-| `cao-fleet` | **Workstation Fleet Conductor**: inspect, route, and dispatch tasks across projects (`status`, `dispatch`, `inspect`, `route`) |
-| `cao-laya` | **Laya System-1 Reflex**: instant intent/model routing and anti-babysitting risk gate (`route`, `gate`) |
-| `cao-sandbox` | **Worktree Sandboxes**: isolated branch execution, anti-tamper testing, and automated squash-merge |
-| `cao-qa <url_or_file>` | **Playwright QA & UX Auditor**: clicks every control, correlates frontend/backend errors, detects redundant/dead buttons & UX friction |
-| `cao-run` | health-check, then launch the interactive supervisor in tmux (add `--skip-check` to skip gate) |
-| `cao-plan "<goal>"` | **Autonomous Goal Decomposer**: splits high-level goal into acyclic DAG (`wcao/tasks.json`) with TokenMaster routing |
-| `cao-auto` / `cao_auto.py` | **Headless autonomous runner**: executes task DAG, prevents file race collisions, auto-switches 429 quota, self-heals |
-| `cao-limits` | **Engine quota status**: live Claude 5h/7d window utilization %, reset times, and engine spend |
-| `cao-monitor` | **Real-time board**: terminal dashboard of running tasks, worker statuses, and file locks |
-| `cao-memory` | **Episodic memory**: SQLite FTS5 store, recall, and list cross-session lessons (`store`, `recall`, `list`) |
-| `cao-aggressive` | **Postflight audit & stress-tester**: 5-vector verification (AST, secrets, 12-factor, tests) + auto-generates executable load/stress harness (`wcao/audit/stress-test.sh`) |
-| `cao-doctor` | run pre-flight health check on its own (toolchain, engines, logins, endpoint) |
-| `cao-update` / `./update.sh` | **One-command full update**: git pull, re-apply site-packages patches, refresh `~/.local/bin` symlinks, apply config, restart daemon, doctor |
-| `cao-tokens` | heatmap + per-day usage across **all engines**, last 7 days, cao-only (cells are in/out) |
-| `cao-plugins` | share Claude MCP + plugins/skills with every engine (`list`, `broadcast --dry-run`) |
-| `cao-stop` | end session: stop daemon + tmux sessions (`--workers` keeps supervisor, `-k` keeps daemon) |
-| `cao-config` | **Browser config editor**: edit endpoint, models, port, API key and apply in one click (serves on localhost:9877) |
-| `./setup/3_apply/apply.sh` | push `setup/2_configure/` edits live (renders config, re-registers, offers restart) |
-| `python3 setup/3_apply/inherit_mcp.py` | copy your Claude MCP servers into worker profiles (`--list`, `--dry-run`) |
-| `python3 setup/3_apply/inherit_all.py` | register those MCP servers with every engine's own CLI (codex/opencode/agy/copilot) |
+### The 8 Core Fleet Verbs
+
+| Command | Shorthand / Legacy | Description & Typical Usage |
+|---|---|---|
+| `crew status` | `cao-crew status` | **Unified Workstation Dashboard:** fleet projects, active tasks, token spend, and provider quotas in one view. |
+| `crew fleet` | `cao-fleet` | **Workstation Fleet Conductor:** cross-project overview, status inspection, and cross-repo task dispatch (`crew fleet dispatch --to <project> "<task>"`). |
+| `crew test <target>` | `cao-qa` | **5-Vector Full-Stack QA-UIX Engine:** Playwright crawler testing DOM ergonomics, frontend JS telemetry, backend HTTP payloads, CORS cross-origin headers, and secret/credential leaks. |
+| `crew repair <target>` | `cao-repair` | **1000x Autonomous Closed-Loop Self-Repair:** takes audit or QA failure report, provisions an ephemeral worktree sandbox, fixes the issue, tests, and squash-merges. |
+| `crew run` | `cao-run` | **Interactive Team Supervisor:** launches background `tmux` session with Claude or AGY as Tech Lead, routing subtasks to worker panes. |
+| `crew terminal` | `tmux attach` | **Supervisor Terminal:** attaches directly to the active interactive supervisor session (`tmux attach -t cao-supervisor`). |
+| `crew auto "<goal>"` | `cao-auto` | **Autonomous Headless DAG Pipeline:** parses high-level goals into task DAGs, enforces file-level disjointness locks, watches quotas, and self-heals regressions. |
+| `crew evolve <worker>` | `cao-evolve` | **Protected Prompt Self-Evolution Loop:** executes benchmark suite against mutated system prompts under a Dual-Gate harness (Quality + Anti-Bloat) with automatic golden rollback. |
+| `crew sandbox <action>` | `cao-sandbox` | **Ephemeral Git Sandboxes:** manages isolated git worktrees (`create`, `test`, `merge`, `list`, `destroy`) for risk-free agent coding. |
+| `crew doctor` | `cao-doctor` | **Pre-Flight Diagnostics:** validates binaries, daemon ports, CLI logins, and API endpoints (`crew doctor --init` runs the interactive wizard). |
+| `crew stop` | `cao-stop` | **Clean Fleet Termination:** cleanly halts worker sessions and orchestrator daemons (`--keep-server` to keep daemon running). |
+
+---
+
+## 5-Vector Full-Stack QA-UIX Engine (`crew test`)
+
+`crew test` (or `cao-qa`) is an autonomous QA, telemetry, and ergonomics auditor powered by Playwright. It crawls local web applications, SPAs, and server endpoints to assess overall product health before shipping:
+
+```bash
+# Run headless QA-UIX audit against local dev server
+crew test http://localhost:3000
+
+# Run headed with automated click exploration and custom output
+crew test http://localhost:8080 --headed --explore --output wcao/audit/qa-report.md
+```
+
+### The 5 Verification Vectors:
+1. **Vector 1: UI/UX Ergonomics & Accessibility:**
+   - Detects viewport clipping and horizontal page overflow.
+   - Identifies dead buttons (unclickable, disabled without tooltip, or zero visual response).
+   - Flags duplicate button labels or misleading text that induces user friction.
+2. **Vector 2: Frontend JS Telemetry & Console Health:**
+   - Captures uncaught JavaScript runtime exceptions (`pageerror`).
+   - Surfaces all `console.error` and `console.warn` occurrences with stack traces.
+3. **Vector 3: Backend & Network Payloads:**
+   - Intercepts all XHR/Fetch network traffic.
+   - Alerts on HTTP 4xx client errors and 5xx backend server crashes.
+   - Measures API latency to flag slow or hung payload responses.
+4. **Vector 4: CORS & Transport Security:**
+   - Verifies cross-origin resource sharing headers.
+   - Detects dangerous wildcard CORS configurations with credentials allowed (`Access-Control-Allow-Origin: *` with credentials).
+5. **Vector 5: Secret & Credential Leak Scanner:**
+   - High-entropy and pattern scanner continuously inspecting DOM HTML, console logs, and outgoing API request URLs.
+   - Catches accidentally leaked OpenAI API keys (`sk-...`), Anthropic keys (`sk-ant-...`), AWS credentials (`AKIA...`), Bearer/JWT tokens, and raw database connection strings.
+
+Any critical failure deducts health score points and generates an actionable remediation plan ready for `crew repair`.
+
+---
+
+## Autonomous Closed-Loop Self-Repair (`crew repair`)
+
+When tests fail or `crew test` uncovers security or UI/UX regressions, `crew repair` closes the loop completely autonomously:
+
+```bash
+# Automatically repair issues found in the latest QA audit
+crew repair wcao/audit/qa-report.md
+
+# Repair a specific project test failure
+crew repair tests/test_auth.py
+```
+
+```
+[Trigger: QA Failure / Test Break]
+                │
+                ▼
+  [1. Isolated Git Worktree Sandbox] (via `crew sandbox`)
+                │
+                ▼
+  [2. Architect Escalation] (Claude / AGY diagnose root cause)
+                │
+                ▼
+  [3. Worker Patch Implementation] (High-throughput coding model)
+                │
+                ▼
+  [4. AST Anti-Tampering & Verification Gate] (Ensures tests weren't weakened)
+                │
+                ▼
+  [5. Clean Squash-Merge & Report] (Merged back into main branch)
+```
+
+1. **Isolation:** Runs entirely within an ephemeral Git worktree sandbox (`.git/worktrees/...`). Production branches remain completely untouched.
+2. **Anti-Tampering:** Ensures the worker does not simply delete failing assertions or insert bypasses (`assert True`).
+3. **Squash-Merge:** Once all tests pass and postflight audits succeed, the fix is squash-merged into the working branch with an audit trail in `wcao/audit/`.
+
+---
+
+## Protected Prompt Self-Evolution (`crew evolve`)
+
+Worker system prompts (e.g. `coder_worker`, `analyst_worker`) are living code. `crew evolve` runs an automated optimization harness to refine system instructions based on past execution history and benchmark test suites:
+
+```bash
+# Evolve coder_worker prompt against local benchmark harness
+crew evolve coder_worker --task-dir benchmarks/coder --iterations 3
+
+# Dry run to preview candidate mutations without writing to disk
+crew evolve coder_worker --dry-run
+```
+
+### The Dual-Gate Harness:
+* 🛡️ **Quality Gate:** The mutated prompt must achieve 100% test pass rate on all canonical regression tasks. Any regression triggers an immediate, zero-latency rollback to the golden prompt checkpoint.
+* 📏 **Anti-Bloat Gate:** Prompt mutations that introduce unnecessary fluff, repetitive tokens, or excessive prompt bloat are penalized and rejected, keeping agent system prompts razor-sharp and token-efficient.
+* 💾 **Golden Checkpoints:** All validated improvements are saved with atomic versioning under `wcao/evolve/history/` and compiled to the live store via `apply.sh`.
 
 Environment knobs (all optional): `CAO_SUPERVISOR_PROVIDER` forces the supervisor
 engine · `CAO_FALLBACK_PROVIDER` sets the auto-retry engine · `LOCAL_API_KEY`

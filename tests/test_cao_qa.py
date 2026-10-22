@@ -269,3 +269,37 @@ def test_cao_qa_safety_autofill_modals_and_screenshots(tmp_path):
     )
     report_destruct = auditor_destruct.run_audit()
     assert report_destruct["summary"]["safety_skipped_count"] == 0
+
+
+def test_cao_qa_security_secrets_and_cors_audit(tmp_path):
+    """Test QA-UIX security vector: secret leak detection and CORS verification."""
+    html_content = """<!DOCTYPE html>
+<html>
+<head>
+  <title>Security Test</title>
+  <script>
+    // Inadvertent secret leak in client-side code
+    window.API_KEY = "sk-ant-api03-abcdefghijklmnopqrstuvwxyz12345";
+    console.log("Logged JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.signature");
+  </script>
+</head>
+<body>
+  <h1>App with Insecure Config</h1>
+  <button id="btn-ok" onclick="console.log('Clicked');">Safe Button</button>
+</body>
+</html>"""
+    fixture_file = tmp_path / "security_fixture.html"
+    fixture_file.write_text(html_content, encoding="utf-8")
+
+    auditor = PlaywrightQAAuditor(target=str(fixture_file), click_wait_ms=80)
+    report = auditor.run_audit()
+
+    assert report["status"] == "FAIL"
+    assert report["summary"]["secret_leaks_count"] >= 2
+    leaks = report["heuristics"]["secret_leaks"]
+    kinds = [l["kind"] for l in leaks]
+    assert any("Anthropic API Key" in k for k in kinds)
+    assert any("Bearer / JWT Token" in k for k in kinds)
+    # Check that secrets are redacted in preview
+    for l in leaks:
+        assert "..." in l["preview"]
