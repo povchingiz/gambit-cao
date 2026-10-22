@@ -18,11 +18,10 @@ if str(HERE) not in os.sys.path:
 from cao_laya_router import LayaRouter
 
 DEFAULT_PROJECTS = {
-    "cao-crew": Path("/home/user/Desktop/Chingiz/cao-crew"),
+    "gambit": Path("/home/user/Desktop/Chingiz/cao-crew"),
     "llmaas": Path("/home/user/Desktop/Chingiz/llmaas"),
-    "3DAang": Path("/home/user/Desktop/Maksat/3DAang"),
-    "nowait-study": Path("/home/user/Desktop/Chingiz/nowait-study"),
     "dycom-demo": Path("/home/user/Desktop/Chingiz/dycom-demo"),
+    "3DAang": Path("/home/user/Desktop/Maksat/3DAang"),
 }
 
 
