@@ -24,6 +24,8 @@ DEFAULT_PROJECTS = {
     "dycom-demo": Path("/home/user/Desktop/Chingiz/dycom-demo"),
     "3DAang": Path("/home/user/Desktop/Maksat/3DAang"),
     "content-factory": Path("/home/user/Desktop/Chingiz/content-factory"),
+    "call-copilot": Path("/home/user/Desktop/Chingiz/call-copilot"),
+    "video-director": Path("/home/user/Desktop/Chingiz/video-director"),
 }
 
 
