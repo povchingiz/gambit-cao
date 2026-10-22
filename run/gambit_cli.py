@@ -69,18 +69,18 @@ def show_chessboard_status(args: List[str]) -> int:
         conductor = FleetConductor()
         projects = conductor.list_projects()
         print("♞ Stationed Knights (Active Projects):")
-        print(f"   {'PROJECT':18s} | {'BRANCH':12s} | {'KNIGHT STATUS':14s} | {'TASKS':6s} | ACTIVE MISSION")
-        print("   " + "─" * 82)
+        print(f"   {'PROJECT':12s} | {'BRANCH':35s} | {'STATUS':10s} | {'TASKS':6s} | ACTIVE MISSION")
+        print("   " + "─" * 96)
         for p in projects:
             branch = p.get("git", {}).get("branch", "detached")
             tasks_str = p.get("tasks_progress", "0/0")
             status_str = p.get("status", "idle").upper()
-            active_str = (p.get("active_task") or "Standing by")[:32]
-            print(f"   {p['name']:18s} | {branch:12s} | {status_str:14s} | {tasks_str:6s} | {active_str}")
+            active_str = (p.get("active_task") or "Standing by")[:28]
+            print(f"   {p['name']:12s} | {branch:35s} | {status_str:10s} | {tasks_str:6s} | {active_str}")
     except Exception as exc:
         print(f"   Knight inspection notice: {exc}")
 
-    print("─" * 88)
+    print("─" * 102)
 
     # 2. Token & Provider Quotas (Bishops & Pawns)
     try:
