@@ -117,6 +117,7 @@ def main():
     screenshots_dir = None
     headless = True
     auto_repair = True
+    confirm_yes = False
 
     i = 0
     while i < len(args):
@@ -151,6 +152,9 @@ def main():
         elif a == "--repair":
             auto_repair = True
             i += 1
+        elif a in ("--yes", "-y", "--yolo"):
+            confirm_yes = True
+            i += 1
         elif a == "--screenshots-dir" and i + 1 < len(args):
             screenshots_dir = args[i + 1]
             i += 2
@@ -173,6 +177,17 @@ def main():
     if not target:
         print("Error: Missing <url_or_html_file>.", file=sys.stderr)
         sys.exit(1)
+
+    # Rook Safety Gate: Confirm heavy browser exploration unless pre-approved
+    if not confirm_yes and not as_json and sys.stdin.isatty() and os.environ.get("CI") != "1":
+        try:
+            resp = input(f"♜ Ready to launch full QA-UIX suite and auto-repair on '{target}'? [y/N]: ").strip().lower()
+            if resp not in ("y", "yes"):
+                print("QA-UIX audit cancelled by Grandmaster.")
+                sys.exit(0)
+        except (KeyboardInterrupt, EOFError):
+            print("\nQA-UIX audit cancelled.")
+            sys.exit(0)
 
     auditor = PlaywrightQAAuditor(
         target=target,
