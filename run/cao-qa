@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+"""cao-qa — Playwright Autonomous QA, Full-Stack Telemetry & UI/UX Ergonomics Auditor CLI.
+
+Clicks through all visible interactive elements on a live URL or local HTML file,
+correlating every UI click with DOM state deltas, network 4xx/5xx telemetry,
+browser console/page errors, and backend server log lines (--backend-log).
+Flags redundant duplicate buttons, silent dead clicks, small targets (< 24x24px),
+unlabeled controls, and desktop/mobile horizontal overflow.
+
+Usage:
+  cao-qa <url_or_html_file> [options]
+  cao-qa audit <url_or_html_file> [options]
+
+Options:
+  --backend-log <path>       Tail backend server log file during each click to correlate errors
+  --max-elements <int>       Maximum interactive elements to test (default: 60)
+  --out-md <path>            Output Markdown report path (default: wcao/audit/qa_ux_report.md)
+  --out-json <path>          Output JSON report path (default: wcao/audit/qa_ux_report.json)
+  --dispatch-project <name>  Automatically enqueue discovered QA/UX bugs into cao-fleet
+  --json                     Print full JSON audit report to stdout
+  -h, --help                 Show this help message
+"""
+import json
+import os
+import shutil
+import sys
+from pathlib import Path
+
+# Auto-re-exec under `uv run --with playwright python3` if playwright is not installed
+# in the invoking Python environment.
+if "-h" not in sys.argv and "--help" not in sys.argv:
+    try:
+        import playwright  # noqa: F401
+    except ImportError:
+        uv_bin = shutil.which("uv")
+        if uv_bin and os.environ.get("CAO_QA_UV_REEXEC") != "1":
+            os.environ["CAO_QA_UV_REEXEC"] = "1"
+            os.execvp(uv_bin, [uv_bin, "run", "--with", "playwright", "python3", __file__, *sys.argv[1:]])
+        else:
+            print("Error: Playwright is required. Run via: uv run --with playwright python3 run/cao-qa ...", file=sys.stderr)
+            sys.exit(1)
+
+HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
+from cao_qa import PlaywrightQAAuditor
+
+
+def print_terminal_summary(report: dict, md_path: Path, json_path: Path):
+    s = report["summary"]
+    h = report["heuristics"]
+    print("🎭 CAO-QA — Playwright Autonomous Full-Stack QA & UI/UX Auditor")
+    print("=" * 88)
+    print(f"🎯 Target:       {report['target']} ({report.get('page_title') or 'untitled'})")
+    print(f"🩺 Status:       {report['status']}  |  Health Score: {report['health_score']}/100  |  Duration: {report['duration_seconds']}s")
+    print(f"🖱️  Interactions: {s['clicked_elements']}/{s['total_interactive_elements']} controls clicked")
+    print("-" * 88)
+    print(f"  • Broken Interactions (JS / HTTP 4xx-5xx / Backend): {s['broken_interactions_count']}")
+    print(f"  • Redundant Control Groups (Duplicate Actions):      {s['redundant_control_groups_count']}")
+    print(f"  • Silent Dead Clicks (Zero Effect):                  {s['dead_clicks_count']}")
+    print(f"  • Small Hit Targets (< 24x24 px):                    {s['small_targets_count']}")
+    print(f"  • Unlabeled Controls (Missing A11y Name):            {s['unlabeled_controls_count']}")
+    print(f"  • Viewport Overflow: Desktop={'YES' if s['desktop_overflow'] else 'NO'} | Mobile={'YES' if s['mobile_overflow'] else 'NO'}")
+    print("-" * 88)
+    if h["ux_simplification_hints"]:
+        print("💡 Top UX Simplification & Remediation Hints:")
+        for idx, hint in enumerate(h["ux_simplification_hints"][:8], 1):
+            print(f"   {idx}. {hint}")
+        print("-" * 88)
+    print(f"📄 Markdown Report: {md_path}")
+    print(f"📊 JSON Report:     {json_path}")
+    print("=" * 88)
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or "-h" in args or "--help" in args:
+        print(__doc__.strip())
+        sys.exit(0)
+
+    if args[0] == "audit":
+        args = args[1:]
+
+    if not args:
+        print("Error: Missing <url_or_html_file>. Run cao-qa --help", file=sys.stderr)
+        sys.exit(1)
+
+    target = None
+    backend_log = None
+    max_elements = 60
+    out_md = None
+    out_json = None
+    dispatch_project = None
+    as_json = False
+
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--backend-log" and i + 1 < len(args):
+            backend_log = args[i + 1]
+            i += 2
+        elif a == "--max-elements" and i + 1 < len(args):
+            max_elements = int(args[i + 1])
+            i += 2
+        elif a == "--out-md" and i + 1 < len(args):
+            out_md = Path(args[i + 1])
+            i += 2
+        elif a == "--out-json" and i + 1 < len(args):
+            out_json = Path(args[i + 1])
+            i += 2
+        elif a == "--dispatch-project" and i + 1 < len(args):
+            dispatch_project = args[i + 1]
+            i += 2
+        elif a == "--json":
+            as_json = True
+            i += 1
+        elif not a.startswith("-") and target is None:
+            target = a
+            i += 1
+        else:
+            print(f"Unknown argument: {a}", file=sys.stderr)
+            sys.exit(1)
+
+    if not target:
+        print("Error: Missing <url_or_html_file>.", file=sys.stderr)
+        sys.exit(1)
+
+    auditor = PlaywrightQAAuditor(
+        target=target,
+        backend_log_path=backend_log,
+        max_elements=max_elements,
+    )
+    report = auditor.run_audit()
+    md_path, json_path = auditor.save_reports(report, out_md=out_md, out_json=out_json)
+
+    if dispatch_project and report["heuristics"]["ux_simplification_hints"]:
+        from cao_fleet import FleetConductor
+
+        conductor = FleetConductor()
+        top_issues = "; ".join(report["heuristics"]["ux_simplification_hints"][:4])
+        task_desc = f"Fix UI/UX & QA issues discovered by cao-qa (Score {report['health_score']}/100): {top_issues}"
+        dispatch_res = conductor.dispatch_task(
+            task_text=task_desc,
+            project_name_or_path=dispatch_project,
+        )
+        report["fleet_dispatched"] = dispatch_res
+
+    if as_json:
+        print(json.dumps(report, indent=2))
+    else:
+        print_terminal_summary(report, md_path, json_path)
+
+
+if __name__ == "__main__":
+    main()

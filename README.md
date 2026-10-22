@@ -142,6 +142,7 @@ Every command takes `-h`/`--help`. Nothing here needs arguments to start.
 | `cao-fleet` | **Workstation Fleet Conductor**: inspect, route, and dispatch tasks across projects (`status`, `dispatch`, `inspect`, `route`) |
 | `cao-laya` | **Laya System-1 Reflex**: instant intent/model routing and anti-babysitting risk gate (`route`, `gate`) |
 | `cao-sandbox` | **Worktree Sandboxes**: isolated branch execution, anti-tamper testing, and automated squash-merge |
+| `cao-qa <url_or_file>` | **Playwright QA & UX Auditor**: clicks every control, correlates frontend/backend errors, detects redundant/dead buttons & UX friction |
 | `cao-run` | health-check, then launch the interactive supervisor in tmux (add `--skip-check` to skip gate) |
 | `cao-plan "<goal>"` | **Autonomous Goal Decomposer**: splits high-level goal into acyclic DAG (`wcao/tasks.json`) with TokenMaster routing |
 | `cao-auto` / `cao_auto.py` | **Headless autonomous runner**: executes task DAG, prevents file race collisions, auto-switches 429 quota, self-heals |

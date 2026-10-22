@@ -80,6 +80,7 @@ All AI agents operating in this repository MUST follow these rules:
 | `run/cao-fleet` | Workstation Fleet Conductor: cross-project status, inspect, and dispatch |
 | `run/cao-laya` | Laya System-1 reflex router: task-to-worker mapping & anti-babysitting gate |
 | `run/cao-sandbox` | Ephemeral git worktree sandbox creation, testing, and squash-merge |
+| `run/cao-qa` | Playwright Autonomous QA, Full-Stack Telemetry & UI/UX Ergonomics Auditor |
 | `run/cao-limits` | TokenMaster quota sensor: remaining requests & reset windows |
 | `run/cao-monitor` | Live terminal task board viewer |
 | `run/cao-aggressive` | Run 5-vector audit gate and generate `stress-test.sh` |

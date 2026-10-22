@@ -1,0 +1,921 @@
+"""cao_qa.py — Playwright Autonomous QA, Full-Stack Telemetry & UI/UX Ergonomics Auditor.
+
+Explores a live URL or local HTML file using headless Chrome/Playwright:
+1. Discovers and clicks interactive elements (buttons, links, role=button, submits, tabs).
+2. Correlates every UI click with:
+   - DOM state delta (before/after structural & text fingerprint)
+   - Network telemetry (XHR/fetch URLs, HTTP 4xx/5xx status codes, latency in ms)
+   - Browser console errors/warnings & uncaught JS pageerror exceptions
+   - Backend server log lines (--backend-log) emitted during that exact click window
+3. Evaluates UI/UX & Ergonomics heuristics:
+   - Redundant controls (duplicate buttons/links with identical action/API/DOM effect signature)
+   - Silent dead clicks (enabled buttons producing zero DOM, network, URL, or console effect)
+   - Small hit targets (< 24x24px WCAG 2.2 AA minimum)
+   - Unlabeled controls (missing visible text, aria-label, and title)
+   - Viewport horizontal overflow across Desktop (1440x900) and Mobile (390x844)
+   - Actionable UX simplification & flow consolidation recommendations
+"""
+import hashlib
+import json
+import os
+import re
+import time
+from dataclasses import dataclass, field, asdict
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlparse
+
+
+CHROME_CANDIDATES = [
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/chromium",
+    "/snap/bin/chromium",
+]
+
+
+def find_browser_executable() -> Optional[str]:
+    """Return the first available system Chrome/Chromium binary, or None to use Playwright's default."""
+    env_bin = os.environ.get("CAO_QA_BROWSER_BIN")
+    if env_bin and os.path.exists(env_bin):
+        return env_bin
+    for path in CHROME_CANDIDATES:
+        if os.path.exists(path) and os.access(path, os.X_OK):
+            return path
+    return None
+
+
+def normalize_target_url(target: str) -> str:
+    """Convert a file path or URL string into a valid navigable URL."""
+    target = target.strip()
+    if target.startswith(("http://", "https://", "file://")):
+        return target
+    p = Path(target).expanduser().resolve()
+    if p.exists():
+        return p.as_uri()
+    if ":" in target and not target.startswith("/"):
+        return f"http://{target}"
+    return p.as_uri()
+
+
+@dataclass
+class NetworkEvent:
+    method: str
+    url: str
+    status: Optional[int]
+    latency_ms: float
+    failed: bool = False
+    failure_text: str = ""
+
+
+@dataclass
+class ElementAuditRecord:
+    index: int
+    tag: str
+    element_id: str
+    classes: str
+    selector: str
+    label: str
+    aria_label: str
+    title: str
+    href: str
+    onclick: str
+    bbox: Dict[str, float]
+    disabled: bool
+    clicked: bool = False
+    dom_changed: bool = False
+    dom_delta_hash: str = ""
+    text_delta_preview: str = ""
+    url_changed: bool = False
+    navigated_to: str = ""
+    network_events: List[Dict[str, Any]] = field(default_factory=list)
+    console_errors: List[str] = field(default_factory=list)
+    console_warnings: List[str] = field(default_factory=list)
+    console_logs: List[str] = field(default_factory=list)
+    page_errors: List[str] = field(default_factory=list)
+    backend_log_lines: List[str] = field(default_factory=list)
+    backend_errors: List[str] = field(default_factory=list)
+    action_signature: str = ""
+
+
+class PlaywrightQAAuditor:
+    """Full-Stack Interactive QA & UI/UX Ergonomics Auditor powered by Playwright."""
+
+    def __init__(
+        self,
+        target: str,
+        backend_log_path: Optional[str] = None,
+        max_elements: int = 60,
+        click_wait_ms: int = 180,
+        headless: bool = True,
+    ):
+        self.raw_target = target
+        self.target_url = normalize_target_url(target)
+        self.backend_log_path = Path(backend_log_path).expanduser().resolve() if backend_log_path else None
+        self.max_elements = max_elements
+        self.click_wait_ms = click_wait_ms
+        self.headless = headless
+
+    def _read_backend_log_offset(self) -> int:
+        if not self.backend_log_path or not self.backend_log_path.exists():
+            return 0
+        try:
+            return self.backend_log_path.stat().st_size
+        except OSError:
+            return 0
+
+    def _read_backend_log_delta(self, start_offset: int) -> Tuple[List[str], List[str]]:
+        if not self.backend_log_path or not self.backend_log_path.exists():
+            return [], []
+        try:
+            with open(self.backend_log_path, "r", encoding="utf-8", errors="replace") as f:
+                f.seek(start_offset)
+                new_text = f.read()
+        except OSError:
+            return [], []
+
+        if not new_text.strip():
+            return [], []
+
+        lines = [line.strip() for line in new_text.splitlines() if line.strip()]
+        err_pattern = re.compile(r"\b(ERROR|Exception|Traceback|CRITICAL|FATAL|500|Internal Server Error)\b", re.IGNORECASE)
+        errors = [line for line in lines if err_pattern.search(line)]
+        return lines, errors
+
+    @staticmethod
+    def _compute_dom_snapshot(page) -> Tuple[str, str]:
+        """Return (structural_hash, visible_text_snapshot) of the current document body."""
+        try:
+            snapshot_data = page.evaluate(
+                """() => {
+                    if (!document.body) return { text: "", struct: "" };
+                    const text = (document.body.innerText || "").replace(/\\s+/g, " ").trim();
+                    const clone = document.body.cloneNode(true);
+                    clone.querySelectorAll('script, style').forEach(el => el.remove());
+                    clone.querySelectorAll('[data-cao-qa-idx]').forEach(el => el.removeAttribute('data-cao-qa-idx'));
+                    const inputs = Array.from(document.querySelectorAll('input, select, textarea, details')).map(
+                        el => `${el.id || el.name}:${el.value}:${el.checked}:${el.open}`
+                    ).join('|');
+                    const struct = clone.innerHTML.replace(/\\s+/g, " ").trim() + "||" + inputs;
+                    return { text, struct };
+                }"""
+            )
+            struct_str = snapshot_data.get("struct", "")
+            text_str = snapshot_data.get("text", "")
+            h = hashlib.sha256(struct_str.encode("utf-8", errors="ignore")).hexdigest()[:16]
+            return h, text_str
+        except Exception:
+            return "error", ""
+
+    @staticmethod
+    def _compute_text_delta(before_text: str, after_text: str) -> str:
+        if before_text == after_text:
+            return ""
+        before_words = before_text.split()
+        after_words = after_text.split()
+        # Find new substring or difference preview
+        if len(after_text) >= len(before_text) and before_text in after_text:
+            added = after_text.replace(before_text, "", 1).strip()
+            return f"+{added[:120]}"
+        # Otherwise find first differing token window
+        for i, (bw, aw) in enumerate(zip(before_words, after_words)):
+            if bw != aw:
+                snippet = " ".join(after_words[max(0, i - 1) : i + 12])
+                return f"~{snippet[:120]}"
+        if len(after_words) > len(before_words):
+            snippet = " ".join(after_words[len(before_words) : len(before_words) + 12])
+            return f"+{snippet[:120]}"
+        return "DOM mutated"
+
+    def run_audit(self) -> Dict[str, Any]:
+        """Execute full Playwright interactive QA and UX audit and return structured report."""
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            import shutil
+            import subprocess
+
+            uv_bin = shutil.which("uv")
+            if not uv_bin:
+                raise RuntimeError("playwright is not installed and 'uv' was not found on PATH")
+            code = (
+                "import json, sys; "
+                f"sys.path.insert(0, {repr(str(Path(__file__).resolve().parent))}); "
+                "from cao_qa import PlaywrightQAAuditor; "
+                f"a = PlaywrightQAAuditor(target={repr(self.raw_target)}, "
+                f"backend_log_path={repr(str(self.backend_log_path) if self.backend_log_path else None)}, "
+                f"max_elements={self.max_elements}, click_wait_ms={self.click_wait_ms}, headless={self.headless}); "
+                "print(json.dumps(a.run_audit()))"
+            )
+            res = subprocess.run(
+                [uv_bin, "run", "--with", "playwright", "python3", "-c", code],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return json.loads(res.stdout.strip().splitlines()[-1])
+
+        started_at = time.time()
+        executable_path = find_browser_executable()
+        initial_console_errors: List[str] = []
+        initial_page_errors: List[str] = []
+        initial_network_failures: List[Dict[str, Any]] = []
+
+        with sync_playwright() as p:
+            launch_kwargs: Dict[str, Any] = {
+                "headless": self.headless,
+                "args": ["--no-sandbox", "--disable-dev-shm-usage"],
+            }
+            if executable_path:
+                launch_kwargs["executable_path"] = executable_path
+
+            browser = p.chromium.launch(**launch_kwargs)
+            context = browser.new_context(viewport={"width": 1440, "height": 900})
+            page = context.new_page()
+
+            # Automatically dismiss blocking alert/confirm/prompt dialogs while logging them
+            dialog_messages: List[str] = []
+
+            def _on_dialog(dialog):
+                dialog_messages.append(f"{dialog.type}: {dialog.message}")
+                try:
+                    dialog.dismiss()
+                except Exception:
+                    pass
+
+            page.on("dialog", _on_dialog)
+
+            # Active collectors that switch between initial page load and per-element clicks
+            active_console_errors: List[str] = initial_console_errors
+            active_console_warnings: List[str] = []
+            active_console_logs: List[str] = []
+            active_page_errors: List[str] = initial_page_errors
+            active_network_events: List[NetworkEvent] = []
+            req_start_times: Dict[int, float] = {}
+
+            def _on_console(msg):
+                mtype = msg.type
+                text = msg.text
+                if mtype == "error":
+                    active_console_errors.append(text)
+                elif mtype == "warning":
+                    active_console_warnings.append(text)
+                else:
+                    active_console_logs.append(text)
+
+            def _on_pageerror(exc):
+                active_page_errors.append(str(exc))
+
+            def _on_request(req):
+                req_start_times[id(req)] = time.time()
+
+            def _on_response(resp):
+                req = resp.request
+                t0 = req_start_times.pop(id(req), time.time())
+                latency = round((time.time() - t0) * 1000.0, 1)
+                active_network_events.append(
+                    NetworkEvent(
+                        method=req.method,
+                        url=resp.url,
+                        status=resp.status,
+                        latency_ms=latency,
+                        failed=resp.status >= 400,
+                    )
+                )
+
+            def _on_requestfailed(req):
+                t0 = req_start_times.pop(id(req), time.time())
+                latency = round((time.time() - t0) * 1000.0, 1)
+                failure = req.failure or "request_failed"
+                if isinstance(failure, dict):
+                    failure_str = failure.get("errorText", str(failure))
+                else:
+                    failure_str = str(failure)
+                active_network_events.append(
+                    NetworkEvent(
+                        method=req.method,
+                        url=req.url,
+                        status=None,
+                        latency_ms=latency,
+                        failed=True,
+                        failure_text=failure_str,
+                    )
+                )
+
+            page.on("console", _on_console)
+            page.on("pageerror", _on_pageerror)
+            page.on("request", _on_request)
+            page.on("response", _on_response)
+            page.on("requestfailed", _on_requestfailed)
+
+            # 1. Navigate to target URL
+            page.goto(self.target_url, wait_until="domcontentloaded", timeout=20000)
+            page.wait_for_timeout(200)
+
+            page_title = page.title()
+            base_url = page.url
+            base_parsed = urlparse(base_url)
+
+            for ev in active_network_events:
+                if ev.failed:
+                    initial_network_failures.append(asdict(ev))
+
+            # 2. Check Desktop & Mobile Viewport Overflow before mutating state
+            viewport_overflow = self._check_viewport_overflow(page)
+
+            # 3. Discover Interactive Elements on Desktop (1440x900)
+            page.set_viewport_size({"width": 1440, "height": 900})
+            page.wait_for_timeout(100)
+
+            raw_elements = page.evaluate(
+                """(maxElements) => {
+                    const selector = 'button, a[href], [role="button"], input[type="submit"], input[type="button"], input[type="checkbox"], input[type="radio"], input[type="range"], label[for], label:has(input), select, summary, [role="tab"], [role="switch"], [onclick]';
+                    const nodes = Array.from(document.querySelectorAll(selector));
+                    const results = [];
+                    nodes.forEach((el, idx) => {
+                        if (results.length >= maxElements) return;
+                        const rect = el.getBoundingClientRect();
+                        const style = window.getComputedStyle(el);
+                        if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0) {
+                            return;
+                        }
+                        if (rect.width === 0 && rect.height === 0) {
+                            return;
+                        }
+                        el.setAttribute('data-cao-qa-idx', String(idx));
+                        const tag = el.tagName.toLowerCase();
+                        const id = el.id || '';
+                        const classes = typeof el.className === 'string' ? el.className.trim() : '';
+                        let labelText = (el.innerText || el.value || '').replace(/\\s+/g, ' ').trim();
+                        if (!labelText && el.labels && el.labels.length > 0) {
+                            labelText = (el.labels[0].innerText || '').replace(/\\s+/g, ' ').trim();
+                        }
+                        if (!labelText && el.closest('label')) {
+                            labelText = (el.closest('label').innerText || '').replace(/\\s+/g, ' ').trim();
+                        }
+                        const text = labelText;
+                        const ariaLabel = el.getAttribute('aria-label') || '';
+                        const title = el.getAttribute('title') || '';
+                        const href = el.getAttribute('href') || '';
+                        const onclick = el.getAttribute('onclick') || '';
+                        const disabled = Boolean(el.disabled || el.getAttribute('aria-disabled') === 'true');
+                        let cssSelector = tag;
+                        if (id) cssSelector += `#${id}`;
+                        else if (classes) cssSelector += `.${classes.split(/\\s+/)[0]}`;
+                        results.append ? results.append({}) : results.push({
+                            index: idx,
+                            tag,
+                            element_id: id,
+                            classes,
+                            selector: cssSelector,
+                            label: text.slice(0, 80),
+                            aria_label: ariaLabel,
+                            title,
+                            href,
+                            onclick,
+                            bbox: {
+                                x: Math.round(rect.x * 10) / 10,
+                                y: Math.round(rect.y * 10) / 10,
+                                width: Math.round(rect.width * 10) / 10,
+                                height: Math.round(rect.height * 10) / 10
+                            },
+                            disabled
+                        });
+                    });
+                    return results;
+                }""",
+                self.max_elements,
+            )
+
+            records: List[ElementAuditRecord] = [ElementAuditRecord(**item) for item in raw_elements]
+
+            # 4. Interact with each discovered element and collect telemetry
+            for rec in records:
+                if rec.disabled:
+                    continue
+
+                # Re-ensure data-cao-qa-idx exists if we reloaded page after a navigation
+                loc = page.locator(f'[data-cao-qa-idx="{rec.index}"]').first
+                if loc.count() == 0 and rec.element_id:
+                    loc = page.locator(f"#{rec.element_id}").first
+
+                if loc.count() == 0:
+                    continue
+
+                # Reset per-click collectors
+                click_console_errors: List[str] = []
+                click_console_warnings: List[str] = []
+                click_console_logs: List[str] = []
+                click_page_errors: List[str] = []
+                click_network_events: List[NetworkEvent] = []
+                dialog_messages.clear()
+
+                active_console_errors = click_console_errors
+                active_console_warnings = click_console_warnings
+                active_console_logs = click_console_logs
+                active_page_errors = click_page_errors
+                active_network_events = click_network_events
+
+                before_hash, before_text = self._compute_dom_snapshot(page)
+                before_url = page.url
+                log_offset = self._read_backend_log_offset()
+
+                # Check if link is an external URL so we don't leave the local audit target forever
+                is_external_link = False
+                if rec.tag == "a" and rec.href:
+                    parsed_href = urlparse(rec.href)
+                    if parsed_href.scheme in ("http", "https") and parsed_href.netloc and parsed_href.netloc != base_parsed.netloc:
+                        is_external_link = True
+
+                try:
+                    if is_external_link:
+                        # Don't navigate away to external internet sites during local UI audit;
+                        # record the external href as its navigation target.
+                        rec.clicked = True
+                        rec.url_changed = True
+                        rec.navigated_to = rec.href
+                    else:
+                        loc.scroll_into_view_if_needed(timeout=1500)
+                        loc.click(timeout=2000)
+                        rec.clicked = True
+                        page.wait_for_timeout(self.click_wait_ms)
+                except Exception:
+                    # Try force click if obscured/animated
+                    try:
+                        loc.click(force=True, timeout=1500)
+                        rec.clicked = True
+                        page.wait_for_timeout(self.click_wait_ms)
+                    except Exception:
+                        rec.clicked = False
+
+                after_url = page.url
+                if not is_external_link and after_url != before_url:
+                    rec.url_changed = True
+                    rec.navigated_to = after_url
+
+                after_hash, after_text = self._compute_dom_snapshot(page)
+                if after_hash != before_hash or bool(dialog_messages):
+                    rec.dom_changed = True
+                    if dialog_messages:
+                        rec.text_delta_preview = f"Dialog: {'; '.join(dialog_messages)}"
+                        rec.dom_delta_hash = hashlib.sha256(rec.text_delta_preview.encode()).hexdigest()[:12]
+                    else:
+                        rec.text_delta_preview = self._compute_text_delta(before_text, after_text)
+                        rec.dom_delta_hash = after_hash
+
+                rec.network_events = [asdict(ev) for ev in click_network_events]
+                rec.console_errors = list(click_console_errors)
+                rec.console_warnings = list(click_console_warnings)
+                rec.console_logs = list(click_console_logs)
+                rec.page_errors = list(click_page_errors)
+
+                backend_lines, backend_errs = self._read_backend_log_delta(log_offset)
+                rec.backend_log_lines = backend_lines
+                rec.backend_errors = backend_errs
+
+                # Build deterministic action signature for redundancy detection
+                api_sig = ",".join(
+                    sorted(f"{ev.method}:{urlparse(ev.url).path}" for ev in click_network_events)
+                )
+                handler_sig = (rec.onclick or rec.href or "").strip()
+                rec.action_signature = self._build_action_signature(
+                    api_sig=api_sig,
+                    dom_delta_hash=rec.dom_delta_hash,
+                    text_delta=rec.text_delta_preview,
+                    handler_sig=handler_sig,
+                    console_logs=rec.console_logs,
+                    navigated_to=rec.navigated_to,
+                )
+
+                # Restore clean page state if the click mutated the DOM or navigated away
+                if (rec.dom_changed or rec.url_changed) and not is_external_link:
+                    try:
+                        page.goto(self.target_url, wait_until="domcontentloaded", timeout=10000)
+                        page.wait_for_timeout(60)
+                        page.evaluate(
+                            """(maxElements) => {
+                                const selector = 'button, a[href], [role="button"], input[type="submit"], input[type="button"], input[type="checkbox"], input[type="radio"], input[type="range"], label[for], label:has(input), select, summary, [role="tab"], [role="switch"], [onclick]';
+                                const nodes = Array.from(document.querySelectorAll(selector));
+                                let count = 0;
+                                nodes.forEach((el, idx) => {
+                                    if (count >= maxElements) return;
+                                    const rect = el.getBoundingClientRect();
+                                    const style = window.getComputedStyle(el);
+                                    if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0) return;
+                                    if (rect.width === 0 && rect.height === 0) return;
+                                    el.setAttribute('data-cao-qa-idx', String(idx));
+                                    count++;
+                                });
+                            }""",
+                            self.max_elements,
+                        )
+                    except Exception:
+                        pass
+
+            browser.close()
+
+        duration_s = round(time.time() - started_at, 2)
+        return self._analyze_findings(
+            page_title=page_title,
+            records=records,
+            viewport_overflow=viewport_overflow,
+            initial_console_errors=initial_console_errors,
+            initial_page_errors=initial_page_errors,
+            initial_network_failures=initial_network_failures,
+            browser_executable=executable_path or "playwright-chromium",
+            duration_s=duration_s,
+        )
+
+    @staticmethod
+    def _build_action_signature(
+        api_sig: str,
+        dom_delta_hash: str,
+        text_delta: str,
+        handler_sig: str,
+        console_logs: List[str],
+        navigated_to: str = "",
+    ) -> str:
+        """Create a normalized effect signature to detect duplicate/redundant buttons."""
+        if not api_sig and not dom_delta_hash and not handler_sig and not console_logs and not navigated_to:
+            return ""
+        parts = []
+        if api_sig:
+            parts.append(f"api={api_sig}")
+        if dom_delta_hash:
+            parts.append(f"dom={dom_delta_hash}")
+        if navigated_to:
+            parts.append(f"nav={navigated_to}")
+        if not parts and handler_sig:
+            parts.append(f"handler={handler_sig}")
+        if not parts and console_logs:
+            parts.append(f"log={console_logs[0][:60]}")
+        return "|".join(parts)
+
+    def _check_viewport_overflow(self, page) -> Dict[str, Any]:
+        """Test both Desktop (1440x900) and Mobile (390x844) viewports for horizontal overflow."""
+        viewports = {
+            "desktop": {"width": 1440, "height": 900},
+            "mobile": {"width": 390, "height": 844},
+        }
+        results: Dict[str, Any] = {}
+        for name, vp in viewports.items():
+            page.set_viewport_size(vp)
+            page.wait_for_timeout(80)
+            info = page.evaluate(
+                """() => {
+                    const docWidth = document.documentElement.scrollWidth;
+                    const winWidth = window.innerWidth;
+                    const hasOverflow = docWidth > winWidth + 2;
+                    const overflowing = [];
+                    if (hasOverflow) {
+                        document.querySelectorAll('*').forEach(el => {
+                            const r = el.getBoundingClientRect();
+                            if (r.right > winWidth + 4 && overflowing.length < 5) {
+                                const tag = el.tagName.toLowerCase();
+                                const id = el.id ? `#${el.id}` : '';
+                                const cls = (typeof el.className === 'string' && el.className.trim())
+                                    ? `.${el.className.trim().split(/\\s+/)[0]}` : '';
+                                overflowing.push(`${tag}${id}${cls} (right=${Math.round(r.right)}px)`);
+                            }
+                        });
+                    }
+                    return {
+                        viewport_width: winWidth,
+                        scroll_width: docWidth,
+                        overflow_px: Math.max(0, docWidth - winWidth),
+                        has_overflow: hasOverflow,
+                        offending_elements: overflowing
+                    };
+                }"""
+            )
+            results[name] = info
+        return results
+
+    def _analyze_findings(
+        self,
+        page_title: str,
+        records: List[ElementAuditRecord],
+        viewport_overflow: Dict[str, Any],
+        initial_console_errors: List[str],
+        initial_page_errors: List[str],
+        initial_network_failures: List[Dict[str, Any]],
+        browser_executable: str,
+        duration_s: float,
+    ) -> Dict[str, Any]:
+        redundant_controls: List[Dict[str, Any]] = []
+        dead_clicks: List[Dict[str, Any]] = []
+        broken_interactions: List[Dict[str, Any]] = []
+        small_targets: List[Dict[str, Any]] = []
+        unlabeled_controls: List[Dict[str, Any]] = []
+
+        # Group by action_signature to detect redundant buttons/links
+        sig_groups: Dict[str, List[ElementAuditRecord]] = {}
+
+        for rec in records:
+            display_name = rec.label or rec.aria_label or rec.title or rec.selector
+
+            # 1. Small Hit Target (< 24x24px WCAG 2.2 AA)
+            w = rec.bbox.get("width", 0)
+            h = rec.bbox.get("height", 0)
+            if 0 < w < 24 or 0 < h < 24:
+                small_targets.append(
+                    {
+                        "index": rec.index,
+                        "selector": rec.selector,
+                        "label": display_name,
+                        "width": w,
+                        "height": h,
+                        "recommendation": f"Increase target size of '{display_name}' ({w}x{h}px) to at least 24x24px (WCAG 2.2 AA).",
+                    }
+                )
+
+            # 2. Unlabeled Control
+            if not rec.label.strip() and not rec.aria_label.strip() and not rec.title.strip():
+                unlabeled_controls.append(
+                    {
+                        "index": rec.index,
+                        "selector": rec.selector,
+                        "tag": rec.tag,
+                        "recommendation": f"Add visible text or an accessible `aria-label` to `{rec.selector}`.",
+                    }
+                )
+
+            if not rec.clicked:
+                continue
+
+            # 3. Broken Interactions (JS errors, HTTP 4xx/5xx, failed requests, or backend log errors)
+            failed_net = [ev for ev in rec.network_events if ev.get("failed") or (ev.get("status") or 0) >= 400]
+            if rec.console_errors or rec.page_errors or failed_net or rec.backend_errors:
+                broken_interactions.append(
+                    {
+                        "index": rec.index,
+                        "selector": rec.selector,
+                        "label": display_name,
+                        "console_errors": rec.console_errors,
+                        "page_errors": rec.page_errors,
+                        "failed_network": failed_net,
+                        "backend_errors": rec.backend_errors,
+                    }
+                )
+
+            # 4. Silent Dead Clicks
+            has_any_effect = (
+                rec.dom_changed
+                or rec.url_changed
+                or bool(rec.network_events)
+                or bool(rec.console_errors)
+                or bool(rec.console_warnings)
+                or bool(rec.console_logs)
+                or bool(rec.page_errors)
+                or bool(rec.backend_log_lines)
+                or rec.tag == "select"
+            )
+            if not has_any_effect:
+                dead_clicks.append(
+                    {
+                        "index": rec.index,
+                        "selector": rec.selector,
+                        "label": display_name,
+                        "tag": rec.tag,
+                        "recommendation": f"Control '{display_name}' ({rec.selector}) produced zero DOM, network, URL, or state change when clicked. Wire up its handler or remove it.",
+                    }
+                )
+
+            # 5. Collect for Redundant Controls
+            if rec.action_signature:
+                sig_groups.setdefault(rec.action_signature, []).append(rec)
+
+        for sig, group in sig_groups.items():
+            if len(group) > 1:
+                labels = [g.label or g.aria_label or g.selector for g in group]
+                selectors = [g.selector for g in group]
+                redundant_controls.append(
+                    {
+                        "action_signature": sig,
+                        "count": len(group),
+                        "labels": labels,
+                        "selectors": selectors,
+                        "indices": [g.index for g in group],
+                        "recommendation": (
+                            f"Consolidate {len(group)} duplicate controls ({', '.join(repr(l) for l in labels)}) "
+                            f"that trigger the exact same action signature `{sig}`."
+                        ),
+                    }
+                )
+
+        # 6. Synthesize Concrete UX Simplification Hints
+        ux_simplification_hints: List[str] = []
+        for rc in redundant_controls:
+            ux_simplification_hints.append(rc["recommendation"])
+        for dc in dead_clicks:
+            ux_simplification_hints.append(dc["recommendation"])
+        for bi in broken_interactions:
+            err_summary = []
+            if bi["console_errors"] or bi["page_errors"]:
+                err_summary.append(f"JS error ({(bi['console_errors'] + bi['page_errors'])[0][:80]})")
+            if bi["failed_network"]:
+                net0 = bi["failed_network"][0]
+                err_summary.append(f"HTTP {net0.get('status') or 'ERR'} on {net0.get('method')} {net0.get('url')}")
+            if bi["backend_errors"]:
+                err_summary.append(f"Backend error ({bi['backend_errors'][0][:80]})")
+            ux_simplification_hints.append(
+                f"Fix broken interaction on '{bi['label']}' ({bi['selector']}): {', '.join(err_summary)}."
+            )
+        for st in small_targets:
+            ux_simplification_hints.append(st["recommendation"])
+        for uc in unlabeled_controls:
+            ux_simplification_hints.append(uc["recommendation"])
+        for vp_name, vp_data in viewport_overflow.items():
+            if vp_data.get("has_overflow"):
+                ux_simplification_hints.append(
+                    f"Fix {vp_name} horizontal overflow (+{vp_data['overflow_px']}px beyond {vp_data['viewport_width']}px viewport; "
+                    f"offenders: {', '.join(vp_data.get('offending_elements', [])[:3]) or 'root container'})."
+                )
+        if len(records) > 25:
+            ux_simplification_hints.append(
+                f"High control density ({len(records)} interactive controls on a single screen). "
+                "Consider progressive disclosure (grouping secondary actions into a collapsible drawer or menu)."
+            )
+
+        # Calculate QA & UX Health Score (0-100)
+        deductions = (
+            len(broken_interactions) * 18
+            + len(dead_clicks) * 10
+            + len(redundant_controls) * 8
+            + len(small_targets) * 5
+            + len(unlabeled_controls) * 5
+            + sum(10 for vp in viewport_overflow.values() if vp.get("has_overflow"))
+        )
+        score = max(0, 100 - deductions)
+        if broken_interactions:
+            status = "FAIL"
+        elif dead_clicks or redundant_controls or small_targets or unlabeled_controls or any(
+            vp.get("has_overflow") for vp in viewport_overflow.values()
+        ):
+            status = "WARN"
+        else:
+            status = "PASS"
+
+        return {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "target": self.raw_target,
+            "target_url": self.target_url,
+            "page_title": page_title,
+            "browser_executable": browser_executable,
+            "duration_seconds": duration_s,
+            "status": status,
+            "health_score": score,
+            "summary": {
+                "total_interactive_elements": len(records),
+                "clicked_elements": sum(1 for r in records if r.clicked),
+                "broken_interactions_count": len(broken_interactions),
+                "dead_clicks_count": len(dead_clicks),
+                "redundant_control_groups_count": len(redundant_controls),
+                "small_targets_count": len(small_targets),
+                "unlabeled_controls_count": len(unlabeled_controls),
+                "desktop_overflow": viewport_overflow.get("desktop", {}).get("has_overflow", False),
+                "mobile_overflow": viewport_overflow.get("mobile", {}).get("has_overflow", False),
+            },
+            "initial_load_errors": {
+                "console_errors": initial_console_errors,
+                "page_errors": initial_page_errors,
+                "network_failures": initial_network_failures,
+            },
+            "heuristics": {
+                "broken_interactions": broken_interactions,
+                "redundant_controls": redundant_controls,
+                "dead_clicks": dead_clicks,
+                "small_targets": small_targets,
+                "unlabeled_controls": unlabeled_controls,
+                "viewport_overflow": viewport_overflow,
+                "ux_simplification_hints": ux_simplification_hints,
+            },
+            "elements": [asdict(r) for r in records],
+        }
+
+    @staticmethod
+    def render_markdown(report: Dict[str, Any]) -> str:
+        """Render a rich Markdown QA & UX Ergonomics Audit Report."""
+        s = report["summary"]
+        h = report["heuristics"]
+        lines = [
+            f"# Playwright Autonomous QA & UI/UX Ergonomics Report",
+            "",
+            f"- **Target:** `{report['target']}` (`{report['target_url']}`)",
+            f"- **Page Title:** {report.get('page_title') or '(untitled)'}",
+            f"- **Status:** **{report['status']}** (Health Score: **{report['health_score']}/100**)",
+            f"- **Browser Engine:** `{report['browser_executable']}`",
+            f"- **Audit Duration:** `{report['duration_seconds']}s`",
+            f"- **Timestamp:** `{report['timestamp']}`",
+            "",
+            "## 1. Executive Summary",
+            "",
+            "| Metric | Count / Status |",
+            "|---|---|",
+            f"| Interactive Controls Discovered | `{s['total_interactive_elements']}` (Clicked: `{s['clicked_elements']}`) |",
+            f"| Broken Interactions (JS / HTTP 4xx-5xx / Backend Errors) | `{s['broken_interactions_count']}` |",
+            f"| Silent Dead Clicks (Zero Effect) | `{s['dead_clicks_count']}` |",
+            f"| Redundant / Duplicate Control Groups | `{s['redundant_control_groups_count']}` |",
+            f"| Small Hit Targets (`< 24x24 px`) | `{s['small_targets_count']}` |",
+            f"| Unlabeled Controls (Missing A11y Name) | `{s['unlabeled_controls_count']}` |",
+            f"| Desktop Horizontal Overflow (`1440x900`) | `{'YES' if s['desktop_overflow'] else 'NO'}` |",
+            f"| Mobile Horizontal Overflow (`390x844`) | `{'YES' if s['mobile_overflow'] else 'NO'}` |",
+            "",
+        ]
+
+        # Broken interactions
+        lines.append("## 2. Full-Stack Telemetry & Broken Interactions")
+        lines.append("")
+        if not h["broken_interactions"]:
+            lines.append("No console errors, uncaught JS exceptions, HTTP 4xx/5xx responses, or backend log errors triggered by UI clicks.")
+        else:
+            for item in h["broken_interactions"]:
+                lines.append(f"### `{item['selector']}` — **{item['label']}** (Index #{item['index']})")
+                for ce in item["console_errors"]:
+                    lines.append(f"- **Console Error:** `{ce}`")
+                for pe in item["page_errors"]:
+                    lines.append(f"- **Uncaught PageError:** `{pe}`")
+                for net in item["failed_network"]:
+                    lines.append(
+                        f"- **Network Failure:** `{net.get('method')} {net.get('url')}` -> "
+                        f"Status `{net.get('status') or net.get('failure_text')}` ({net.get('latency_ms')} ms)"
+                    )
+                for be in item["backend_errors"]:
+                    lines.append(f"- **Correlated Backend Log Error:** `{be}`")
+                lines.append("")
+
+        # Redundant controls
+        lines.append("## 3. Redundant Controls (Duplicate Functionality)")
+        lines.append("")
+        if not h["redundant_controls"]:
+            lines.append("No redundant buttons or duplicate action controls detected.")
+        else:
+            for rc in h["redundant_controls"]:
+                labels_str = ", ".join(f"`{l}`" for l in rc["labels"])
+                sels_str = ", ".join(f"`{sel}`" for sel in rc["selectors"])
+                lines.append(
+                    f"- **{rc['count']} Duplicate Controls ({labels_str}):** Selectors {sels_str} share identical effect signature `{rc['action_signature']}`."
+                )
+        lines.append("")
+
+        # Dead clicks
+        lines.append("## 4. Silent Dead Clicks")
+        lines.append("")
+        if not h["dead_clicks"]:
+            lines.append("All clicked interactive controls produced observable DOM, URL, network, or state feedback.")
+        else:
+            for dc in h["dead_clicks"]:
+                lines.append(f"- **`{dc['selector']}` ({dc['label']}):** Zero DOM delta, zero network calls, zero URL/console effect.")
+        lines.append("")
+
+        # Ergonomics & Accessibility
+        lines.append("## 5. Ergonomics, Hit Targets & Viewport Overflow")
+        lines.append("")
+        if not h["small_targets"] and not h["unlabeled_controls"] and not s["desktop_overflow"] and not s["mobile_overflow"]:
+            lines.append("All controls meet minimum 24x24px target sizing, have accessible labels, and fit both desktop and mobile viewports.")
+        else:
+            for st in h["small_targets"]:
+                lines.append(f"- **Small Target:** `{st['selector']}` (`{st['label']}`) is `{st['width']}x{st['height']}px` (< 24x24px).")
+            for uc in h["unlabeled_controls"]:
+                lines.append(f"- **Unlabeled Control:** `{uc['selector']}` (`<{uc['tag']}>`) has no visible text, `aria-label`, or `title`.")
+            for vp_name, vp in h["viewport_overflow"].items():
+                if vp.get("has_overflow"):
+                    lines.append(
+                        f"- **Viewport Overflow ({vp_name} `{vp['viewport_width']}px`):** "
+                        f"Scroll width is `{vp['scroll_width']}px` (+`{vp['overflow_px']}px` overflow). "
+                        f"Offenders: {', '.join(vp.get('offending_elements', [])) or 'root'}"
+                    )
+        lines.append("")
+
+        # UX Simplification Hints
+        lines.append("## 6. Actionable UX Simplification & Remediation Plan")
+        lines.append("")
+        if not h["ux_simplification_hints"]:
+            lines.append("- UI is clean, responsive, and free of redundant or dead controls.")
+        else:
+            for idx, hint in enumerate(h["ux_simplification_hints"], 1):
+                lines.append(f"{idx}. {hint}")
+        lines.append("")
+
+        return "\n".join(lines)
+
+    def save_reports(
+        self,
+        report: Dict[str, Any],
+        out_md: Optional[Path] = None,
+        out_json: Optional[Path] = None,
+    ) -> Tuple[Path, Path]:
+        repo_root = Path(__file__).resolve().parent.parent
+        audit_dir = repo_root / "wcao" / "audit"
+        audit_dir.mkdir(parents=True, exist_ok=True)
+
+        md_path = out_md or (audit_dir / "qa_ux_report.md")
+        json_path = out_json or (audit_dir / "qa_ux_report.json")
+        md_path.parent.mkdir(parents=True, exist_ok=True)
+        json_path.parent.mkdir(parents=True, exist_ok=True)
+
+        md_path.write_text(self.render_markdown(report), encoding="utf-8")
+        json_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        return md_path, json_path
