@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""cao-repair — 1000x Autonomous Closed-Loop Self-Healing CLI.
+
+Audits a web UI or HTML page with cao-qa, identifies bugs, dead clicks, and responsive
+overflows, isolates changes in an ephemeral git worktree sandbox (cao-sandbox),
+applies surgical fixes, re-audits to verify health score improvement, and
+squash-merges without human babysitting.
+
+Usage:
+  cao-repair <target_url_or_html> [options]
+
+Options:
+  --project <path>           Root of git repo to isolate & repair (default: auto-detected)
+  --backend-log <path>       Tail backend server log to correlate errors
+  --max-cycles <int>         Maximum repair & re-verify iterations (default: 2)
+  --no-merge                 Do not squash-merge even if health score improves
+  --screenshots-dir <path>   Directory to store visual issue snapshots
+  --json                     Output JSON result to stdout
+  -h, --help                 Show this help message
+"""
+import json
+import os
+import shutil
+import sys
+from pathlib import Path
+
+# Auto-re-exec under `uv run --with playwright python3` if playwright is not in sys.path
+if "-h" not in sys.argv and "--help" not in sys.argv:
+    try:
+        import playwright  # noqa: F401
+    except ImportError:
+        uv_bin = shutil.which("uv")
+        if uv_bin and os.environ.get("CAO_REPAIR_UV_REEXEC") != "1":
+            os.environ["CAO_REPAIR_UV_REEXEC"] = "1"
+            os.execvp(uv_bin, [uv_bin, "run", "--with", "playwright", "python3", __file__, *sys.argv[1:]])
+        else:
+            print("Error: Playwright is required for cao-repair.", file=sys.stderr)
+            sys.exit(1)
+
+HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
+from cao_repair import AutoRepairEngine
+
+
+def print_summary(res):
+    print("🛠️  CAO-REPAIR — 1000x Autonomous Closed-Loop Self-Healing Engine")
+    print("=" * 88)
+    print(f"🎯 Target:         {res.target}")
+    print(f"📁 Project Root:   {res.project_root}")
+    print(f"🩺 Initial Score:  {res.initial_score}/100 ({res.initial_status})")
+    print(f"✨ Final Score:    {res.final_score}/100 ({res.final_status})")
+    print(f"🔄 Cycles Run:     {res.cycles_run}")
+    print(f"🔀 Squash-Merged:  {'YES (Clean commit to repo)' if res.merged else 'NO'}")
+    print("-" * 88)
+    if res.findings:
+        print(f"🔍 Discovered Defects ({len(res.findings)}):")
+        for idx, f in enumerate(res.findings[:5], 1):
+            print(f"   {idx}. [{f['severity']}] {f['issue_type']}: {f['label']} ({f['selector']})")
+        print("-" * 88)
+    if res.actions_taken:
+        print("⚡ Autonomous Actions Taken:")
+        for idx, a in enumerate(res.actions_taken, 1):
+            print(f"   {idx}. {a}")
+        print("-" * 88)
+    if res.error:
+        print(f"⚠️  Error: {res.error}")
+        print("=" * 88)
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or "-h" in args or "--help" in args:
+        print(__doc__.strip())
+        sys.exit(0)
+
+    target = None
+    project_root = None
+    backend_log = None
+    max_cycles = 2
+    auto_merge = True
+    screenshots_dir = None
+    as_json = False
+
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--project" and i + 1 < len(args):
+            project_root = args[i + 1]
+            i += 2
+        elif a == "--backend-log" and i + 1 < len(args):
+            backend_log = args[i + 1]
+            i += 2
+        elif a == "--max-cycles" and i + 1 < len(args):
+            max_cycles = int(args[i + 1])
+            i += 2
+        elif a == "--screenshots-dir" and i + 1 < len(args):
+            screenshots_dir = args[i + 1]
+            i += 2
+        elif a == "--no-merge":
+            auto_merge = False
+            i += 1
+        elif a == "--json":
+            as_json = True
+            i += 1
+        elif not a.startswith("-") and target is None:
+            target = a
+            i += 1
+        else:
+            print(f"Unknown argument: {a}", file=sys.stderr)
+            sys.exit(1)
+
+    if not target:
+        print("Error: Missing <target_url_or_html>.", file=sys.stderr)
+        sys.exit(1)
+
+    engine = AutoRepairEngine(
+        target=target,
+        project_root=project_root,
+        backend_log=backend_log,
+        max_cycles=max_cycles,
+        auto_merge=auto_merge,
+        screenshots_dir=screenshots_dir,
+    )
+    res = engine.run_repair_loop()
+
+    if as_json:
+        from dataclasses import asdict
+        print(json.dumps(asdict(res), indent=2))
+    else:
+        print_summary(res)
+
+
+if __name__ == "__main__":
+    main()

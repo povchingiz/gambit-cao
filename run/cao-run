@@ -127,11 +127,22 @@ if ! nc -z 127.0.0.1 "$SERVER_PORT" >/dev/null 2>&1; then
   echo "✓ CAO daemon active."
 fi
 
-# 2. Ensure the tmux server carries LOCAL_API_KEY so opencode worker panes inherit it.
+# 2. Ensure the tmux server carries LOCAL_API_KEY so opencode worker panes inherit it,
+#    and configure P6.2 non-interactive environment variables to prevent CLI prompt deadlocks.
 #    (tmux is the backend CAO spawns worker CLIs in; its global env is not persistent
 #     across a tmux server restart, so we re-assert it on every cao-run.)
-if [ -n "${LOCAL_API_KEY:-}" ] && command -v tmux >/dev/null 2>&1; then
-  tmux setenv -g LOCAL_API_KEY "$LOCAL_API_KEY" >/dev/null 2>&1 || true
+if command -v tmux >/dev/null 2>&1; then
+  if [ -n "${LOCAL_API_KEY:-}" ]; then
+    tmux setenv -g LOCAL_API_KEY "$LOCAL_API_KEY" >/dev/null 2>&1 || true
+  fi
+  # P6.2: Non-interactive environment variables across all background worker panes
+  tmux setenv -g CI "1" >/dev/null 2>&1 || true
+  tmux setenv -g DEBIAN_FRONTEND "noninteractive" >/dev/null 2>&1 || true
+  tmux setenv -g PIP_NO_INPUT "1" >/dev/null 2>&1 || true
+  tmux setenv -g GIT_TERMINAL_PROMPT "0" >/dev/null 2>&1 || true
+  tmux setenv -g HOMEBREW_NO_AUTO_UPDATE "1" >/dev/null 2>&1 || true
+  tmux setenv -g PAGER "cat" >/dev/null 2>&1 || true
+  tmux setenv -g npm_config_yes "true" >/dev/null 2>&1 || true
 fi
 
 # 3. Pick the supervisor provider.

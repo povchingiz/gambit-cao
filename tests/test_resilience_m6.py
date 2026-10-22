@@ -135,6 +135,38 @@ def test_p6_1_stdout_stagnation_timeout(tmp_path):
     assert tasks[0]["status"] == "failed"
 
 
+def test_p6_2_cli_prompt_deadlock_detection(tmp_path):
+    tasks_file = tmp_path / "tasks.json"
+    tasks = [{"id": "t_prompt", "title": "Interactive prompt", "detail": "Waiting on y/N", "status": "running", "engine": "claude_worker"}]
+    tasks_file.write_text(json.dumps(tasks), encoding="utf-8")
+
+    client = DummyClient(status="RUNNING", output="Do you want to continue? [y/N]")
+    runner = AutonomousRunner(
+        tasks_file=tasks_file,
+        client=client,
+        wall_clock_timeout=900.0,
+        stagnation_timeout=180.0,
+        self_heal=True,
+    )
+
+    now = time.monotonic()
+    runner.active_workers["t_prompt"] = {
+        "terminal_id": "term-prompt-block",
+        "engine": "claude_worker",
+        "started": now - 30.0,
+        "last_output_hash": hashlib.sha256(b"Do you want to continue? [y/N]").hexdigest(),
+        "last_output_change_monotonic": now - 16.0,  # > 15s prompt stagnation
+    }
+
+    runner._poll_active_terminals(tasks)
+
+    assert "term-prompt-block" in client.deleted_terminals
+    assert "t_prompt" not in runner.active_workers
+    assert tasks[0]["failure_reason"] == "prompt_deadlock"
+    assert tasks[0]["status"] == "pending"  # Self-healed and requeued on fallback engine
+    assert tasks[0]["engine"] == "coder_worker"
+
+
 def test_p6_4_heal_stale_daemon():
     # 1. Port not open -> returns False
     with patch("run.cao_lib.is_port_open", return_value=False):
@@ -212,3 +244,18 @@ def test_p6_6_cao_memory_cli_subcommands():
     res_help = subprocess.run([sys.executable, str(cao_mem), "--help"], capture_output=True, text=True, check=True)
     assert "prune" in res_help.stdout
     assert "vacuum" in res_help.stdout
+
+
+def test_p6_5_cao_init_wizard_generation(tmp_path):
+    from run import cao_init
+
+    # Mock detection: claude missing, agy and opencode available
+    mock_clis = {"claude": False, "opencode": True, "codex": False, "agy": True, "copilot": False}
+    best_sup = cao_init.select_best_supervisor(mock_clis)
+    assert best_sup == "antigravity_worker"
+
+    cfg_text = cao_init.generate_local_config(mock_clis, best_sup)
+    assert 'default_supervisor     = "antigravity_worker"' in cfg_text
+    assert "coder_worker" in cfg_text
+    assert "antigravity_worker" in cfg_text
+    assert "claude_worker" not in cfg_text  # Missing CLI excluded from registration

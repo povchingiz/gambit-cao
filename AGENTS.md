@@ -81,11 +81,13 @@ All AI agents operating in this repository MUST follow these rules:
 | `run/cao-laya` | Laya System-1 reflex router: task-to-worker mapping & anti-babysitting gate |
 | `run/cao-sandbox` | Ephemeral git worktree sandbox creation, testing, and squash-merge |
 | `run/cao-qa` | Playwright Autonomous QA, Full-Stack Telemetry & UI/UX Ergonomics Auditor |
+| `run/cao-repair` | 1000x Autonomous Closed-Loop Self-Repair: audit -> worktree fix -> verify -> merge |
+| `run/cao-init` | 1-Click setup wizard: auto-detect CLIs, generate tailored config, apply profiles |
 | `run/cao-limits` | TokenMaster quota sensor: remaining requests & reset windows |
 | `run/cao-monitor` | Live terminal task board viewer |
 | `run/cao-aggressive` | Run 5-vector audit gate and generate `stress-test.sh` |
 | `./setup/3_apply/apply.sh` | Compile configs & register worker profiles with CAO daemon |
-| `uv run --with pytest pytest tests/` | Execute orchestrator test suite (68 unit & integration tests) |
+| `uv run --with pytest pytest tests/` | Execute orchestrator test suite (80 unit & integration tests) |
 
 ---
 

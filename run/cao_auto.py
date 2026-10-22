@@ -506,14 +506,22 @@ class AutonomousRunner:
                     self.client.delete_terminal(terminal_id)
                     completed.append(tid)
                 else:
-                    # P6.1 Watchdog & Stagnation Detection
+                    # P6.1 Watchdog & Stagnation Detection + P6.2 CLI Prompt Deadlock Detection
                     elapsed_wall = now_mono - started_mono
                     elapsed_stag = now_mono - meta.get("last_output_change_monotonic", started_mono)
                     timeout_reason = None
-                    if self.wall_clock_timeout is not None and elapsed_wall > self.wall_clock_timeout:
-                        timeout_reason = "watchdog_timeout"
-                    elif self.stagnation_timeout is not None and elapsed_stag > self.stagnation_timeout:
-                        timeout_reason = "stdout_stagnation"
+
+                    # P6.2 Prompt Deadlock: terminal waiting on interactive confirmation [y/N], (y/n), Password
+                    if elapsed_stag >= 15.0 and output:
+                        tail = output[-200:].strip()
+                        if re.search(r"(\[y/N\]|\[Y/n\]|\(y/n\)|Do you want to continue\?|Enter passphrase|Password:)", tail, re.IGNORECASE):
+                            timeout_reason = "prompt_deadlock"
+
+                    if not timeout_reason:
+                        if self.wall_clock_timeout is not None and elapsed_wall > self.wall_clock_timeout:
+                            timeout_reason = "watchdog_timeout"
+                        elif self.stagnation_timeout is not None and elapsed_stag > self.stagnation_timeout:
+                            timeout_reason = "stdout_stagnation"
 
                     if timeout_reason:
                         self.client.delete_terminal(terminal_id)
