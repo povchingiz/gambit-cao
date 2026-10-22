@@ -38,3 +38,24 @@ def test_crew_alias_resolution():
     assert cao_crew.exists()
     assert crew.exists()
     assert cao_crew.resolve() == crew.resolve()
+
+
+def test_crew_auto_goal_routing(capsys, monkeypatch):
+    """Ensure natural language strings automatically route to cao-auto without explicit 'auto' verb."""
+    import cao_crew_cli
+    routed = []
+
+    def mock_forward(script_name, args):
+        routed.append((script_name, args))
+        return 0
+
+    monkeypatch.setattr(cao_crew_cli, "forward_to_script", mock_forward)
+    monkeypatch.setattr(sys, "argv", ["crew", "Build", "a", "secure", "REST", "API"])
+
+    with pytest.raises(SystemExit) as exc:
+        cao_crew_cli.main()
+
+    assert exc.value.code == 0
+    assert len(routed) == 1
+    assert routed[0][0] == "cao-auto"
+    assert routed[0][1] == ["Build a secure REST API"]

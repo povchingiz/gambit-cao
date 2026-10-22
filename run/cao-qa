@@ -116,6 +116,7 @@ def main():
     explore_modals = True
     screenshots_dir = None
     headless = True
+    auto_repair = True
 
     i = 0
     while i < len(args):
@@ -143,6 +144,12 @@ def main():
             i += 1
         elif a == "--no-modals":
             explore_modals = False
+            i += 1
+        elif a in ("--no-repair", "--audit-only"):
+            auto_repair = False
+            i += 1
+        elif a == "--repair":
+            auto_repair = True
             i += 1
         elif a == "--screenshots-dir" and i + 1 < len(args):
             screenshots_dir = args[i + 1]
@@ -196,6 +203,25 @@ def main():
         print(json.dumps(report, indent=2))
     else:
         print_terminal_summary(report, md_path, json_path)
+
+        if auto_repair and report.get("health_score", 100) < 100:
+            print("\n" + "=" * 88)
+            print("🛠️  AUTONOMOUS CLOSED-LOOP REPAIR TRIGGERED")
+            print("=" * 88)
+            print(f"Auditor detected regressions (Score: {report['health_score']}/100). Entering ephemeral repair sandbox...")
+            try:
+                from cao_repair import AutoRepairEngine
+                repair_engine = AutoRepairEngine(target=target, backend_log=backend_log)
+                res = repair_engine.run()
+                print(f"Repair outcome: Initial {res.initial_score}/100 -> Final {res.final_score}/100 ({res.final_status})")
+                for act in res.actions_taken:
+                    print(f"  • {act}")
+                if res.merged:
+                    print("✅ Verified fixes automatically squash-merged to branch!")
+                elif res.error:
+                    print(f"⚠️  Repair notice: {res.error}")
+            except Exception as exc:
+                print(f"Repair attempt encountered notice: {exc}")
 
 
 if __name__ == "__main__":

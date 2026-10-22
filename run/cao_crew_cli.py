@@ -143,36 +143,49 @@ def print_help():
     help_text = """
 🛸 cao-crew (`crew`) — The Autonomous AI Engineering Fleet CLI
 
-Usage:
-  crew <command> [options]
-  cao-crew <command> [options]
+The entire fleet compressed into 3 primary autonomous actions:
 
-Core Commands:
-  status                   Unified dashboard: fleet projects, tokens, quotas & active panes
-  fleet [status|dispatch]  Workstation Fleet Conductor: cross-project orchestration
-  run                      Launch interactive multi-agent supervisor in tmux
-  auto "<goal>"            Autonomous headless DAG execution with self-healing
-  stop                     Cleanly terminate background workers, panes and daemon
-  test <target>            Playwright autonomous QA, full-stack telemetry & UX auditor
-  repair <target>          Closed-loop autonomous repair: audit -> sandbox -> fix -> merge
-  sandbox [create|list]    Ephemeral git worktree isolation manager
-  evolve <worker>          Protected prompt self-evolution loop (quality & anti-bloat gates)
-  doctor [--init|--update] Pre-flight diagnostics, 1-click setup wizard, and updates
-  terminal                 Attach directly to the conversational fleet supervisor pane
+1. THE FLEET OVERVIEW & INTERACTIVE TECH LEAD:
+   crew                     Attach to live supervisor in tmux (or show fleet status)
+   crew fleet               Inspect workstation projects, spend & provider quotas
+
+2. AUTONOMOUS HEADLESS EXECUTION (SANDBOX + SELF-HEALING):
+   crew "<goal>"            Autonomously plan, isolate in sandbox, build, and verify
+   crew auto "<goal>"       (Explicit headless DAG alias)
+
+3. 5-VECTOR FULL-STACK QA-UIX + IMMEDIATE AUTO-REPAIR:
+   crew test <url|path>     Playwright UI/UX audit + IMMEDIATE closed-loop auto-repair
+   crew test --audit-only   Audit only (skips repair sandbox)
+
+Lifecycle & Management:
+   crew stop                Cleanly terminate background workers, panes and daemon
+   crew doctor              Pre-flight diagnostics and configuration wizard
+   crew evolve <worker>     Protected prompt self-evolution loop
 
 Examples:
-  crew status                               # View all projects, quotas, and active workers
-  crew fleet dispatch "Add STL export" --to dycom-demo
-  crew test http://127.0.0.1:3000           # Full-stack UI/UX Playwright audit
-  crew repair dycom-demo/web/index.html     # Closed-loop test + worktree fix + merge
-  crew terminal                             # Talk to the Lead Supervisor in natural language
+   crew                     # Attach to supervisor pane or view fleet dashboard
+   crew "Add auth tokens"   # Headless autonomous task execution
+   crew test http://127.0.0.1:3000   # QA crawl + instant repair of any defect found
+   crew stop                # Clean shutdown of all background sessions
 """
     print(help_text.strip())
 
 
 def main():
     args = sys.argv[1:]
-    if not args or args[0] in ("-h", "--help", "help"):
+    if not args:
+        # Check if supervisor session exists; if so, attach; otherwise show unified status
+        try:
+            check = subprocess.run(["tmux", "has-session", "-t", "cao-supervisor"], capture_output=True)
+            if check.returncode == 0:
+                print("🛸 Attaching to active fleet supervisor session (cao-supervisor)...")
+                os.execvp("tmux", ["tmux", "attach", "-t", "cao-supervisor"])
+            else:
+                sys.exit(show_unified_status([]))
+        except Exception:
+            sys.exit(show_unified_status([]))
+
+    if args[0] in ("-h", "--help", "help"):
         print_help()
         sys.exit(0)
 
@@ -230,8 +243,10 @@ def main():
         sys.exit(attach_terminal())
 
     else:
-        print(f"Unknown command: '{cmd}'. Run 'crew --help' for available commands.", file=sys.stderr)
-        sys.exit(1)
+        # If the argument is not a known command verb, treat as an autonomous goal string
+        full_goal = " ".join(args)
+        print(f"🛸 Routing autonomous goal to headless DAG pipeline: \"{full_goal}\"")
+        sys.exit(forward_to_script("cao-auto", [full_goal]))
 
 
 if __name__ == "__main__":
