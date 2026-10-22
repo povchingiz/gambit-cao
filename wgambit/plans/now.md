@@ -19,36 +19,36 @@
 
 ---
 
-## ⚡ Active Parallel Missions (Launched via Subagents)
+## ⚡ Active Frontier Operations (Separate Git Feature Branches)
 
-### 1. ♘ Knight 1: `dycom-demo` — E2E Clinical Pipeline & Safety Buffer
-- **Directory:** `/home/user/Desktop/Chingiz/dycom-demo` (`feat/e2e-clinical-pipeline`)
-- **Objectives:**
-  - 2mm Mandibular Alveolar Canal safety buffer tube and 3D collision detection (`nerve_buffer.py`).
-  - Misch Bone Density HU Profiler (D1–D5) for implant bed site analysis (`bone_density.py`).
-  - Metal Artifact Reduction (MAR) streak filter (`mar_filter.py`).
-  - Full E2E pipeline integration (`pipeline.py`) exporting clinical JSON reports + STL geometries.
-  - Competitor benchmark & killer features document (`docs/COMPETITORS_AND_KILLER_FEATURES.md`).
-  - 100% test pass rate in `tests/`.
+### 1. ♘ Knight 1: `dycom-demo` — Smart Diagnostic Annotator & Hazard Radar
+- **Repository:** `/home/user/Desktop/Chingiz/dycom-demo`
+- **Active Branch:** `feat/3d-progressive-hazard-radar` (from `feat/e2e-clinical-pipeline`)
+- **Mission:**
+  - Progressive 3D Loading: futuristic laser-scanning hologram wireframe + 96³ low-res voxel cloud in < 0.8s.
+  - Hazard Radar: neon red 2.0 mm nerve safety tube, yellow thin bone, orange soft bone (D4/D5), purple periapical cysts.
+  - 3D Point-to-Point Ruler Tool: interactive distance measurement in Three.js with laser line & mm label.
+  - X-Ray Opacity Slider: bone transparency adjustment (30%) to view internal roots and canal.
+  - Unit tests in `tests/test_hazard_detector.py` and `tests/test_3d_ruler.py`.
 
-### 2. ♘ Knight 2: `llmaas` — Speech Streaming Lab & Frontier Research
-- **Directory:** `/home/user/Desktop/Chingiz/llmaas` (`feat/speech-frontier-lab`)
-- **Objectives:**
-  - Ultra-low latency streaming STT engine (`src/speech/stt_streamer.py`).
-  - Ultra-fast streaming TTS engine with Kokoro-82M / Piper architecture (`src/speech/tts_kokoro.py`).
-  - 52 ARKit blendshape viseme mapper & 60 FPS timestamped stream (`src/speech/viseme_streamer.py`).
-  - Full-duplex WebSocket speech server (`src/speech/ws_server.py`).
-  - Frontier optimization benchmarks & deep dive (`experiments/frontier/`, `docs/FRONTIER_OPTIMIZATION.md`).
-  - Unit test suite in `tests/speech/`.
+### 2. ♘ Knight 2: `3DAang` — Universal Photo/Video-to-Avatar & 3s Voice Cloning
+- **Repository:** `/home/user/Desktop/Maksat/3DAang`
+- **Active Branch:** `feat/universal-avatar-voice-clone` (from `feat/arkit-avatar-webgl`)
+- **Mission:**
+  - Photo-to-Avatar Pipeline: portrait photo analysis, MediaPipe landmarks, UV texture map baking, 52 ARKit blendshapes rig, GLB export (< 1.5 MB).
+  - Video-to-Avatar Pipeline: keyframe sampling from selfie video, multi-frame landmark stabilization, textured GLB generation.
+  - 3-Second Zero-Shot Voice Cloning: speaker acoustic embedding extraction and personalized speech synthesis.
+  - WebGL UI Upgrade: upload photo/video & record voice sample buttons in Three.js viewer.
+  - Unit tests in `tests/test_photo_to_avatar.py`, `tests/test_video_to_avatar.py`, `tests/test_voice_cloner.py`.
 
-### 3. ♘ Knight 3: `3DAang` — Modernized Photo-to-3D Avatar & WebGL Engine
-- **Directory:** `/home/user/Desktop/Maksat/3DAang` (`feat/arkit-avatar-webgl`)
-- **Objectives:**
-  - Git repository initialization and clean hygiene (`.gitignore`, legacy isolation).
-  - Photo-to-3D-head builder with 52 ARKit blendshapes (`avatar_engine/avatar_builder.py`, `blendshape_rig.py`).
-  - Real-time Three.js WebGL canvas client (`web_viewer/`) with lifelike blinking, breathing, and zero-lag (< 100ms) viseme-to-mouth synchronization.
-  - Eliminating the slow legacy 10-15s Wav2Lip video generation bottleneck (`docs/AVATAR_ARCHITECTURE.md`).
-  - Unit tests in `tests/`.
+### 3. ♘ Knight 3: `llmaas` — Real-Time Call Assistant & LLM-CLI Video Editor
+- **Repository:** `/home/user/Desktop/Chingiz/llmaas`
+- **Active Branch:** `feat/call-copilot-and-video-cli` (from `feat/speech-frontier-lab`)
+- **Mission:**
+  - Real-Time Call Co-pilot (`src/copilot/`): LiveKit/WebRTC streaming audio, sub-150ms VAD with backchanneling filter, objection classifier, sub-200ms RAG battlecard generator, WebSocket HUD.
+  - LLM-CLI Video Editor (`src/video_editor/`): Faster-Whisper word-level timestamps, pause & silence remover (FFmpeg jump-cuts), auto-reframe 16:9 to 9:16 vertical Shorts, natural language director CLI.
+  - Unit tests in `tests/copilot/` and `tests/video_editor/`.
+
 
 ---
 
