@@ -1,25 +1,59 @@
-# CAO-Crew (`crew`) — Unified Autonomous AI Engineering Fleet
+# ♜ GAMBIT — Autonomous Multi-Agent Engineering Fleet
 
-> **Orchestrate your frontier AI coding CLI engines into an autonomous, self-evolving, closed-loop engineering squad.**
+> **Orchestrate your frontier AI coding CLI engines into an autonomous, self-evolving engineering fleet — powered by CAO Architecture.**
 
 [![Interactive Deck](https://img.shields.io/badge/Presentation%20Deck-16%20Slides-6366f1?style=flat-square&logo=googleslides&logoColor=white)](https://povchingiz.github.io/cao-crew/)
 [![Sequence Diagram](https://img.shields.io/badge/Architecture-Sequence%20Diagram-06b6d4?style=flat-square&logo=diagramsdotnet&logoColor=white)](https://povchingiz.github.io/cao-crew/#16)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-86%20Passing-emerald)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-92%20Passing-emerald)](tests/)
+
+---
+
+## The Chess Taxonomy
+
+GAMBIT organizes multi-agent coding like a grandmaster orchestrating the board:
+
+```
+                    ♔ GRANDMASTER (You)
+                 Strategic Intent & Approvals
+                             │
+                             ▼
+                    ♜ THE ROOK (Master Conductor)
+                 One Terminal to Rule Them All.
+                 Controls the ranks and files across all projects.
+                             │
+         ┌───────────────────┴───────────────────┐
+         ▼                                       ▼
+  ♞ KNIGHT: Project A                     ♞ KNIGHT: Project B
+  Stationed Project Supervisor            Stationed Project Supervisor
+  (Local repo & wcao/ context)            (Local repo & wcao/)
+         │                                       │
+    ┌────┴────┐                             ┌────┴────┐
+    ▼         ▼                             ▼         ▼
+ ♝ BISHOP   ♙ PAWN                       ♝ BISHOP   ♙ PAWN
+ Specialist  Bulk Worker                 Specialist  Bulk Worker
+  (Claude)   (OpenCode)                   (Codex)    (DeepSeek)
+```
+
+- ♔ **Grandmaster (You):** Gives natural language goals, answers bubble-up questions, and confirms heavy operations.
+- ♜ **The Rook (Master Conductor):** The overarching terminal coordinating all projects across your workstation.
+- ♞ **The Knights (Project Supervisors):** Stationed in each project repository in background tmux sessions (`cao-run`).
+- ♝ **The Bishops (Specialists):** Deep reasoning engines (Claude for architecture/contracts, AGY for whole-repo analysis).
+- ♙ **The Pawns (Bulk Workers):** High-throughput workers (OpenCode, DeepSeek, GLM) typing boilerplate, schemas, and tests.
 
 ---
 
 ## TL;DR
 
-> **`cao-crew` (CLI: `crew`) turns your fragmented terminal AI tools (`claude`, `codex`, `agy`, `opencode`, `copilot`, `hermes`) into an autonomous, quota-aware, self-repairing engineering squad managed inside background `tmux` sessions.**
+> **`gambit` turns your fragmented terminal AI tools (`claude`, `codex`, `agy`, `opencode`, `copilot`, `hermes`) into a unified, self-repairing engineering fleet managed inside background `tmux` sessions.**
 
-* 🛸 **Unified `crew` Command Line:** 8 clean verbs (`crew status`, `crew fleet`, `crew test`, `crew repair`, `crew run`, `crew terminal`, `crew auto`, `crew evolve`) replace dozens of fragmented scripts.
-* 💰 **Economic Asymmetry:** The expensive model (Claude) designs architecture and reviews PRs; cheap/local models (OpenCode, DeepSeek, Hermes) write bulk boilerplate; Gemini/Antigravity ingests massive 1M+ token repo contexts; Copilot drafts GitHub PRs, Actions, and cloud deploy configs.
-* 🧪 **5-Vector Full-Stack QA-UIX (`crew test`):** Autonomous Playwright auditor testing DOM ergonomics (viewport overflow, dead buttons, redundant text), frontend JS telemetry, backend/network payloads, CORS cross-origin security, and credential/secret leak exposure.
-* 🔄 **1000x Closed-Loop Self-Repair (`crew repair`):** Detects regressions, spins up an isolated ephemeral git worktree sandbox, escalates to reasoning architects, verifies fixes against tests, and squash-merges automatically.
-* 🧬 **Protected Prompt Self-Evolution (`crew evolve`):** Automatically upgrades worker system prompts against benchmark tasks using a **Dual-Gate Harness** (Quality Gate + Anti-Bloat Gate) with automatic golden rollback protection.
-* 🔑 **Zero Subscription Tax:** Authenticate once natively in your terminal (`claude /login`, `codex login`, `agy`, `gh auth login`). CAO connects directly to your existing authenticated CLI sessions — no proxying, no extra SaaS markups, no token leakage.
-* 🧠 **Persistent Memory Standard (`wcao/`):** SQLite FTS5 episodic storage + `wcao/plans/now.md` checkpoints ensure full context preservation across reboots, crashes, and model switches.
+* ♜ **One Terminal to Rule Them All:** Talk to **The Rook** via `gambit`. The Rook coordinates Stationed Knights across all repos on your machine.
+* 🗣️ **Natural Language Cross-Project Missions:** Just type `gambit "In backend add JWT auth, in mobile add login view"` — no awkward flags needed.
+* 🛡️ **Safety Confirmation Gate:** Heavy QA-UIX browser crawls and worktree repairs prompt for Grandmaster confirmation (`[y/N]`) so you never trigger them by accident (pass `-y` or `--yolo` for autonomous runs).
+* 🧪 **5-Vector Full-Stack QA-UIX (`gambit test`):** Playwright crawler checking DOM ergonomics, JS telemetry, backend payloads, CORS transport, and credential/secret leaks.
+* 🔄 **Closed-Loop Auto-Repair:** Discovered regressions automatically spawn an isolated git worktree sandbox, implement fixes, re-audit to verify 100/100 score, and squash-merge.
+* ⚡ **Space & Dash Commands:** Both `gambit <command>` and `gambit-<command>` are first-class CLI citizens.
+* 🏛️ **CAO Heritage Preserved:** Built proudly on the rock-solid AWS Labs `cli-agent-orchestrator` foundation with zero subscription markups.
 
 ```bash
 git clone git@github.com:povchingiz/cao-crew.git ~/cao-crew && cd ~/cao-crew
@@ -29,12 +63,12 @@ git clone git@github.com:povchingiz/cao-crew.git ~/cao-crew && cd ~/cao-crew
 ---
 
 ### Quick Navigation
-* ⚡ **[TL;DR](#tldr)** — 30-second summary: architecture, economic asymmetry, and quickstart
-* 🎮 **[Unified `crew` CLI Cheatsheet](#unified-crew-command-cheatsheet)** — one command to rule the entire fleet
-* 🧪 **[5-Vector Full-Stack QA-UIX](#5-vector-full-stack-qa-uix-engine-crew-test)** — DOM ergonomics, console telemetry, payloads, CORS & secrets
-* 🔄 **[Closed-Loop Self-Repair](#autonomous-closed-loop-self-repair-crew-repair)** — isolated worktree sandboxes, automated diagnosis & merge
-* 🧬 **[Protected Prompt Self-Evolution](#protected-prompt-self-evolution-crew-evolve)** — Dual-Gate prompt optimization & regression protection
-* 🤖 **[AI Assistant Onboarding](#-first-time-let-your-ai-assistant-guide-you)** — ask your AI agent to set up cao-crew automatically (`AGENTS.md` standard)
+* ⚡ **[TL;DR](#tldr)** — 30-second summary: architecture, chess taxonomy, and quickstart
+* 🎮 **[Gambit Command Cheatsheet](#gambit-command-cheatsheet)** — space and dash commands to rule the board
+* 🧪 **[5-Vector Full-Stack QA-UIX](#5-vector-full-stack-qa-uix-engine-gambit-test)** — DOM ergonomics, console telemetry, payloads, CORS & secrets
+* 🔄 **[Closed-Loop Self-Repair](#autonomous-closed-loop-self-repair)** — isolated worktree sandboxes, automated diagnosis & merge
+* 🧬 **[Protected Prompt Self-Evolution](#protected-prompt-self-evolution-gambit-evolve)** — Dual-Gate prompt optimization & regression protection
+* 🤖 **[AI Assistant Onboarding](#-first-time-let-your-ai-assistant-guide-you)** — ask your AI agent to set up gambit automatically (`AGENTS.md` standard)
 * 🌐 **[Interactive Slides](https://povchingiz.github.io/cao-crew/)** — 16 bilingual slides (RU/EN), dark/light mode, and rival benchmarks
 * 🔄 **[Execution Sequence Diagram](https://povchingiz.github.io/cao-crew/#16)** — native visual trace from North Star goal to verified commit
 * ⚠️ **[The Problem](#the-problem)** — 6 fatal flaws of single-agent and uncoordinated coding
@@ -42,6 +76,23 @@ git clone git@github.com:povchingiz/cao-crew.git ~/cao-crew && cd ~/cao-crew
 * 🚀 **[Installation & Setup](#1-install-once)** — 5-minute bootstrap and configuration
 * 🧠 **[Hermes Learning & Memory](#hermes-learning--memory-system)** — SQLite FTS5 episodic storage and now.md checkpoints
 * 🛡️ **[Autonomous Self-Healing](#autonomous-execution--self-healing-cao_auto)** — AST anti-tampering, 5-vector audit gate, and L2 escalation
+
+---
+
+## Gambit Command Cheatsheet
+
+All commands support both **space syntax** (`gambit <cmd>`) and **dash syntax** (`gambit-<cmd>`):
+
+| Space Command | Dash Command | Description & Typical Usage |
+|---|---|---|
+| `gambit` | `gambit` | **The Rook Master Terminal:** attaches directly to the active Rook supervisor in tmux, or shows the Chessboard if idle. |
+| `gambit fleet` | `gambit-fleet` | **Chessboard Overview:** live status of Stationed Knights (projects), active missions, token spend, and provider quotas. |
+| `gambit "<mission>"` | `gambit auto "<m>"` | **Natural Language Mission:** parses goals, plans across projects, isolates in git worktrees, builds, and verifies. |
+| `gambit test <target>` | `gambit-test` | **5-Vector Full-Stack QA-UIX + Auto-Repair:** Playwright crawler with Grandmaster safety confirmation (`-y` / `--yolo` bypass). |
+| `gambit run` | `gambit-run` | **Launch The Rook:** boots the master conversational supervisor pane in tmux (`--provider agy/claude/codex`). |
+| `gambit stop` | `gambit-stop` | **Clean Board Termination:** halts all background Knights, Daemons, and Rook sessions cleanly. |
+| `gambit doctor` | `gambit-doctor` | **Pre-Flight Diagnostics:** validates binaries, daemon ports, CLI logins, and API endpoints (`--init` for setup wizard). |
+| `gambit evolve <worker>` | `gambit-evolve` | **Protected Prompt Self-Evolution:** optimizes system prompts against benchmark regression suites with Dual-Gate protection. |
 
 ---
 
