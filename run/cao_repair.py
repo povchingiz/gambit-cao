@@ -161,6 +161,10 @@ class AutoRepairEngine:
 
         return findings
 
+    def run(self) -> RepairResult:
+        """Alias for run_repair_loop."""
+        return self.run_repair_loop()
+
     def run_repair_loop(self) -> RepairResult:
         """Run the end-to-end audit, repair in sandbox, re-audit, and merge loop."""
         initial_auditor = PlaywrightQAAuditor(
