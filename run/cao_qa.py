@@ -1124,7 +1124,12 @@ class PlaywrightQAAuditor:
         out_json: Optional[Path] = None,
     ) -> Tuple[Path, Path]:
         repo_root = Path(__file__).resolve().parent.parent
-        audit_dir = repo_root / "wcao" / "audit"
+        try:
+            from run.cao_lib import resolve_workspace_dir
+            ws = resolve_workspace_dir(repo_root, create=True, auto_patch=True)
+        except ImportError:
+            ws = repo_root / "wgambit" if (repo_root / "wgambit").exists() else repo_root / "wcao"
+        audit_dir = ws / "audit"
         audit_dir.mkdir(parents=True, exist_ok=True)
 
         md_path = out_md or (audit_dir / "qa_ux_report.md")

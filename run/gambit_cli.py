@@ -16,6 +16,7 @@ Usage:
   gambit run [--provider <p>]     - Launch The Rook master session in tmux
   gambit stop                     - Clean shutdown of all Knights and Daemons
   gambit doctor                   - Pre-flight diagnostic across tools & logins
+  gambit migrate                  - Auto-migrate & patch workspace from wcao to wgambit
 """
 from __future__ import annotations
 
@@ -252,6 +253,9 @@ def main():
             sys.exit(forward_to_script("cao-update", rest))
         else:
             sys.exit(forward_to_script("cao-doctor", rest))
+
+    elif cmd in ("migrate", "patch"):
+        sys.exit(forward_to_script("gambit-migrate", rest))
 
     elif cmd in ("terminal", "attach", "chat"):
         sys.exit(attach_or_launch_rook())

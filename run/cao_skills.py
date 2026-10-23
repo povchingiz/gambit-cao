@@ -17,11 +17,16 @@ def sanitize_topic(topic: str) -> str:
 
 
 def get_skills_dir(repo_root: Optional[Path] = None) -> Path:
-    """Resolve and ensure wcao/skills/ directory exists."""
+    """Resolve and ensure wgambit/skills/ (or wcao/skills/) directory exists."""
     if repo_root is None:
         from run.cao_auto import find_repo_root
         repo_root = find_repo_root(Path.cwd())
-    skills_dir = repo_root / "wcao" / "skills"
+    try:
+        from run.cao_lib import resolve_workspace_dir
+        ws = resolve_workspace_dir(repo_root, create=True, auto_patch=True)
+    except ImportError:
+        ws = repo_root / "wgambit" if (repo_root / "wgambit").exists() else repo_root / "wcao"
+    skills_dir = ws / "skills"
     skills_dir.mkdir(parents=True, exist_ok=True)
     return skills_dir
 

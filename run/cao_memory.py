@@ -14,9 +14,13 @@ from typing import Any, Dict, List, Optional
 def get_default_db_path() -> Path:
     from run.cao_auto import find_repo_root
     root = find_repo_root(Path.cwd())
-    wcao = root / "wcao"
-    wcao.mkdir(parents=True, exist_ok=True)
-    return wcao / "memory.sqlite"
+    try:
+        from run.cao_lib import resolve_workspace_dir
+        ws = resolve_workspace_dir(root, create=True, auto_patch=True)
+    except ImportError:
+        ws = root / "wgambit" if (root / "wgambit").exists() else root / "wcao"
+    ws.mkdir(parents=True, exist_ok=True)
+    return ws / "memory.sqlite"
 
 
 def get_fleet_db_path() -> Path:

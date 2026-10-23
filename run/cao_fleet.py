@@ -16,6 +16,7 @@ if str(HERE) not in os.sys.path:
     os.sys.path.insert(0, str(HERE))
 
 from cao_laya_router import LayaRouter
+from cao_lib import resolve_workspace_dir
 
 DEFAULT_PROJECTS = {
     "gambit": Path("/home/user/Desktop/Chingiz/cao-crew"),
@@ -148,7 +149,7 @@ class FleetConductor:
         model = laya_decision["model"]
 
         # 2. Append/Enqueue task in target project's now.md or tasks.json
-        wcao_dir = target_path / "wcao"
+        wcao_dir = resolve_workspace_dir(target_path, create=True, auto_patch=True)
         plans_dir = wcao_dir / "plans"
         now_md = plans_dir / "now.md"
         plans_dir.mkdir(parents=True, exist_ok=True)
@@ -334,7 +335,7 @@ class FleetConductor:
         return supervisor_engine, matched_session
 
     def _inspect_tasks_and_plan(self, project_path: Path, detailed: bool = False) -> Dict[str, Any]:
-        wcao = project_path / "wcao"
+        wcao = resolve_workspace_dir(project_path, create=False, auto_patch=False)
         sessions_dir = wcao / "sessions"
         total_tasks = 0
         done_tasks = 0

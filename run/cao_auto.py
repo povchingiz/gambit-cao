@@ -205,7 +205,12 @@ class AutonomousRunner:
             # 4. Hermes 50% Context Compaction Hook
             self.compactor.record_turn()
             if self.compactor.should_compact():
-                design_dir = self.repo_root / "wcao" / "design"
+                try:
+                    from run.cao_lib import resolve_workspace_dir
+                    ws = resolve_workspace_dir(self.repo_root, create=True, auto_patch=True)
+                except ImportError:
+                    ws = self.repo_root / "wgambit" if (self.repo_root / "wgambit").exists() else self.repo_root / "wcao"
+                design_dir = ws / "design"
                 design_contracts = (
                     [str(f.relative_to(self.repo_root)) for f in design_dir.glob("*.md")]
                     if design_dir.exists()
@@ -217,7 +222,7 @@ class AutonomousRunner:
                     worker_outputs=self.recent_worker_outputs,
                     design_contracts=design_contracts,
                 )
-                now_md = self.repo_root / "wcao" / "plans" / "now.md"
+                now_md = ws / "plans" / "now.md"
                 self.compactor.checkpoint_to_now_md(now_md, compacted)
 
             if not self.active_workers and not scheduler.get_ready_tasks(running_files) and not scheduler.is_complete():
@@ -249,7 +254,12 @@ class AutonomousRunner:
                     from run.cao_skills import save_skill
                     summary = f"Self-healed audit issue in {self.session_dir.name}"
                     details = f"Fixed audit blocker after {heal_attempt} remediation attempt(s). Root cause: {last_failure_reason}. Result: {audit_notes}"
-                    db_path = self.repo_root / "wcao" / "memory.sqlite"
+                    try:
+                        from run.cao_lib import resolve_workspace_dir
+                        ws = resolve_workspace_dir(self.repo_root, create=True, auto_patch=True)
+                    except ImportError:
+                        ws = self.repo_root / "wgambit" if (self.repo_root / "wgambit").exists() else self.repo_root / "wcao"
+                    db_path = ws / "memory.sqlite"
                     store_memory("self_healing", summary, details, session_id=self.session_dir.name, db_path=db_path)
                     save_skill(f"healing_{self.session_dir.name}", f"# {summary}\n\n{details}", repo_root=self.repo_root)
                     notify_telegram(f"Hermes retrospective stored self-healing lesson: {summary}", level="info")
@@ -367,7 +377,12 @@ class AutonomousRunner:
         # Hermes Pre-Task Recall Gate: Query memory for relevant past lessons
         query_text = f"{task.get('title', '')} {' '.join(task.get('files', []))} {task.get('detail', '')}".strip()
         from run.cao_memory import query_memory, get_fleet_db_path
-        db_path = self.repo_root / "wcao" / "memory.sqlite"
+        try:
+            from run.cao_lib import resolve_workspace_dir
+            ws = resolve_workspace_dir(self.repo_root, create=False, auto_patch=False)
+        except ImportError:
+            ws = self.repo_root / "wgambit" if (self.repo_root / "wgambit").exists() else self.repo_root / "wcao"
+        db_path = ws / "memory.sqlite"
         memories = query_memory(query_text, limit=2, db_path=db_path) if db_path.exists() else []
         fleet_db = get_fleet_db_path()
         if fleet_db.exists():

@@ -1,0 +1,65 @@
+# now.md — GAMBIT · Active Operations
+
+> **Fleet Status:** ♜ The Rook Orchestrator active | 3 Knights deployed in parallel
+> **Branch:** `1000x` (Synchronized with `origin`: `https://github.com/povchingiz/gambit-cao.git`)
+> **Rule:** NEVER run `git push` without explicit user confirmation.
+
+---
+
+## ♜ GAMBIT Architecture & Chess Taxonomy
+
+- **The Grandmaster (User):** Defines strategic objectives, holds final safety confirmation gate.
+- **The Rook (`gambit` / `cao-crew`):** Master fleet orchestrator, autonomous DAG pipeline, sandbox isolation, self-repair.
+- **The Knights (Specialized Projects):**
+  - ♘ **Knight 1 (`dycom-demo`):** Dental AI & 3D CBCT Segmentation (ToothFairy2, E2E Clinical Calculations).
+  - ♘ **Knight 2 (`llmaas`):** SOTA LLM/GPU Inference & Real-Time Low-Latency Streaming Speech Lab.
+  - ♘ **Knight 3 (`3DAang`):** 3D Avatar Generation (Photo-to-ARKit 52 Blendshapes) & Real-Time Three.js WebGL.
+- **The Bishops (Specialized Engines):** Claude (Architecture), Codex/OpenCode (Implementation), Antigravity/Gemini (Codebase & Multimodal Analysis), Hermes (Local Reasoning).
+- **The Pawns:** Atomic execution steps, AST anti-tampering guards, telemetry probes.
+
+---
+
+## ⚡ Active Frontier Operations (Separate Git Feature Branches)
+
+### 1. ♘ Knight 1: `dycom-demo` — Smart Diagnostic Annotator & Hazard Radar
+- **Repository:** `/home/user/Desktop/Chingiz/dycom-demo`
+- **Active Branch:** `feat/3d-progressive-hazard-radar` (from `feat/e2e-clinical-pipeline`)
+- **Mission:**
+  - Progressive 3D Loading: futuristic laser-scanning hologram wireframe + 96³ low-res voxel cloud in < 0.8s.
+  - Hazard Radar: neon red 2.0 mm nerve safety tube, yellow thin bone, orange soft bone (D4/D5), purple periapical cysts.
+  - 3D Point-to-Point Ruler Tool: interactive distance measurement in Three.js with laser line & mm label.
+  - X-Ray Opacity Slider: bone transparency adjustment (30%) to view internal roots and canal.
+  - Unit tests in `tests/test_hazard_detector.py` and `tests/test_3d_ruler.py`.
+
+### 2. ♘ Knight 2: `3DAang` — Universal Photo/Video-to-Avatar & 3s Voice Cloning
+- **Repository:** `/home/user/Desktop/Maksat/3DAang`
+- **Active Branch:** `feat/universal-avatar-voice-clone` (from `feat/arkit-avatar-webgl`)
+- **Mission:**
+  - Photo-to-Avatar Pipeline: portrait photo analysis, MediaPipe landmarks, UV texture map baking, 52 ARKit blendshapes rig, GLB export (< 1.5 MB).
+  - Video-to-Avatar Pipeline: keyframe sampling from selfie video, multi-frame landmark stabilization, textured GLB generation.
+  - 3-Second Zero-Shot Voice Cloning: speaker acoustic embedding extraction and personalized speech synthesis.
+  - WebGL UI Upgrade: upload photo/video & record voice sample buttons in Three.js viewer.
+  - Unit tests in `tests/test_photo_to_avatar.py`, `tests/test_video_to_avatar.py`, `tests/test_voice_cloner.py`.
+
+### 3. ♘ Knight 3: `llmaas` — Real-Time Call Assistant & LLM-CLI Video Editor
+- **Repository:** `/home/user/Desktop/Chingiz/llmaas`
+- **Active Branch:** `feat/call-copilot-and-video-cli` (from `feat/speech-frontier-lab`)
+- **Mission:**
+  - Real-Time Call Co-pilot (`src/copilot/`): LiveKit/WebRTC streaming audio, sub-150ms VAD with backchanneling filter, objection classifier, sub-200ms RAG battlecard generator, WebSocket HUD.
+  - LLM-CLI Video Editor (`src/video_editor/`): Faster-Whisper word-level timestamps, pause & silence remover (FFmpeg jump-cuts), auto-reframe 16:9 to 9:16 vertical Shorts, natural language director CLI.
+  - Unit tests in `tests/copilot/` and `tests/video_editor/`.
+
+
+---
+
+## ✅ Completed Milestones
+
+- **92/92 Unit & Integration Tests Passing** in `tests/`.
+- **Unified `gambit` CLI**: Space syntax (`gambit status`, `gambit fleet`, `gambit test`) and dash syntax (`gambit-status`, etc.).
+- **Natural Language Mission Dispatch**: `gambit "diagnose and fix"` automatically executes via Laya routing.
+- **Grandmaster Confirmation Gate**: Playwright QA-UIX auditor verifies with the user `[y/N]` before launching heavy browser runs.
+- **GitHub Remote Synchronized**: `main` and `1000x` cleanly pushed to `https://github.com/povchingiz/gambit-cao.git`.
+- **Consolidation of `llmaas`**: Absorbed `nowait-study` and `token-audit` with 382 passing tests.
+- **Client-Side WebWorker DICOM Loader**: Built in `dycom-demo` with progressive 96³ LOD and binary STL exporter.
+
+
