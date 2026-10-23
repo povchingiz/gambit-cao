@@ -78,6 +78,7 @@ The entire orchestrator is consolidated into the unified **`crew`** (or `cao-cre
 | `crew fleet` | `cao-fleet` | Workstation Fleet Conductor: cross-project overview, inspect, and dispatch (`--to <project>`) |
 | `crew test <url>` | `cao-qa` | Playwright Autonomous QA, Full-Stack Telemetry & UI/UX Ergonomics Auditor |
 | `crew repair <target>` | `cao-repair` | 1000x Autonomous Closed-Loop Self-Repair: audit -> worktree sandbox fix -> verify -> merge |
+| `crew harness <cmd>` | `gambit-harness` | **Kernel-Secured AI Agent Isolation & Zero-Secret Runtime:** Landlock LSM jail + API key stripping |
 | `crew run` | `cao-run` | Launch interactive multi-agent supervisor in `tmux` (auto-fallback & prompt deadlock guards) |
 | `crew terminal` | `tmux attach` | Attach directly to the interactive conversational fleet supervisor pane |
 | `crew auto "<goal>"` | `cao-auto` | Autonomous headless DAG pipeline with self-healing, watchdog, and anti-tampering |
@@ -86,7 +87,7 @@ The entire orchestrator is consolidated into the unified **`crew`** (or `cao-cre
 | `crew evolve <worker>` | `cao-evolve` | Protected Prompt Self-Evolution Loop: Dual-Gate (Quality + Anti-Bloat) harness |
 | `crew doctor` | `cao-doctor` | Pre-flight health check across tools, ports, logins, endpoints (`--init` for wizard) |
 | `./setup/3_apply/apply.sh` | — | Compile configs & register worker profiles with CAO daemon |
-| `uv run --with pytest pytest tests/` | — | Execute orchestrator test suite (86 unit & integration tests) |
+| `uv run --with pytest pytest tests/` | — | Execute orchestrator test suite (101 unit & integration tests) |
 
 ---
 
