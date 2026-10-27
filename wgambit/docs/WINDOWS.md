@@ -47,8 +47,8 @@ Inside Ubuntu (WSL):
 
 ```bash
 sudo apt-get update && sudo apt-get install -y git curl
-git clone <this-repo> ~/cao-crew
-cd ~/cao-crew
+git clone https://github.com/povchingiz/gambit-cao.git ~/gambit-cao
+cd ~/gambit-cao
 cp .env.example .env    # set LOCAL_API_KEY
 ./install.sh            # one-command setup (or: ./setup/1_install/bootstrap.sh)
 ```
