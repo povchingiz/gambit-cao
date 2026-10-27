@@ -56,7 +56,7 @@ GAMBIT organizes multi-agent coding like a grandmaster orchestrating the board:
 * 🏛️ **CAO Heritage Preserved:** Built proudly on the rock-solid AWS Labs `cli-agent-orchestrator` foundation with zero subscription markups.
 
 ```bash
-git clone git@github.com:povchingiz/cao-crew.git ~/cao-crew && cd ~/cao-crew
+git clone https://github.com/povchingiz/gambit-cao.git ~/gambit-cao && cd ~/gambit-cao
 ./install.sh
 ```
 
@@ -89,6 +89,7 @@ All commands support both **space syntax** (`gambit <cmd>`) and **dash syntax** 
 | `gambit fleet` | `gambit-fleet` | **Chessboard Overview:** live status of Stationed Knights (projects), active missions, token spend, and provider quotas. |
 | `gambit "<mission>"` | `gambit auto "<m>"` | **Natural Language Mission:** parses goals, plans across projects, isolates in git worktrees, builds, and verifies. |
 | `gambit test <target>` | `gambit-test` | **5-Vector Full-Stack QA-UIX + Auto-Repair:** Playwright crawler with Grandmaster safety confirmation (`-y` / `--yolo` bypass). |
+| `gambit harness <cmd>` | `gambit-harness` | **Kernel-Secured AI Agent Isolation & Zero-Secret Runtime:** Linux Landlock LSM sandbox jail + automatic API key stripping. |
 | `gambit run` | `gambit-run` | **Launch The Rook:** boots the master conversational supervisor pane in tmux (`--provider agy/claude/codex`). |
 | `gambit stop` | `gambit-stop` | **Clean Board Termination:** halts all background Knights, Daemons, and Rook sessions cleanly. |
 | `gambit doctor` | `gambit-doctor` | **Pre-Flight Diagnostics:** validates binaries, daemon ports, CLI logins, and API endpoints (`--init` for setup wizard). |
@@ -308,7 +309,7 @@ engine · `CAO_FALLBACK_PROVIDER` sets the auto-retry engine · `LOCAL_API_KEY`
 ## 1. Install (once)
 
 ```sh
-git clone git@github.com:povchingiz/cao-crew.git ~/cao-crew && cd ~/cao-crew
+git clone https://github.com/povchingiz/gambit-cao.git ~/gambit-cao && cd ~/gambit-cao
 cp .env.example .env               # set LOCAL_API_KEY (bulk-worker endpoint key)
 ./install.sh                       # recommended one-command setup
 # or, step by step:
