@@ -19,7 +19,27 @@
 
 ---
 
-## ⚡ Active Frontier Operations (Separate Git Feature Branches)
+### 4. ♘ Knight 4: `content-factory` — Autonomous Content Conductor & Anti-Ban Intelligence
+- **Repository:** `/home/user/Desktop/Chingiz/content-factory`
+- **Active Branch:** `feat/anti-ban-content-conductor` (from `main`)
+- **Mission:**
+  - Anti-Ban Scraper Engine: `curl_cffi` (JA3/JA4 TLS impersonation) + `Camoufox` C++ native fingerprint spoofing.
+  - Social Intelligence: Twitter/X, Threads, and Reddit monitoring with real-time mention tracking & sentiment classifier.
+  - Idea Expander Brain: enriches 1-sentence ideas into viral briefs with hooks, counterarguments, and multi-format copy (LinkedIn, X, Threads).
+  - Autonomous Video Engine: jump-cuts, 9:16 Shorts auto-reframing, and animated subtitles.
+  - Grandmaster Review Gate (`[y/N]`) & humanized anti-ban publishing queue.
+  - 6/6 tests passing.
+
+---
+
+## 🔬 Frontier Research Deliverables
+
+- **Morning Fleet Progress & Diff Report (`morning_fleet_diff_and_progress_report.md`):** Complete morning report across all 7 workstation projects (666 tests passing, 100% green). All changes committed to isolated local feature branches.
+- **Masked Distillation Platform (`wgambit/design/masked-distillation-platform.md`):** Theoretical formulation of stealth concept reverse-engineering via isomorphic category theory camouflage, deconstructive DAG partitioning, distributed persona sharding, and local inverse recombination.
+- **Video Analytics & Action Recognition (`wgambit/design/video-analytics-architecture.md`):** Comprehensive architecture for real-time human activity recognition, surgical SOP compliance, and natural language video search ("Google for CCTV").
+- **GitHub & Fleet Archive Audit (`github_archive_audit_and_synergy_map.md`):** Full audit of 12 `@povchingiz` GitHub repositories + local desktop projects. Identified cleanup targets (`y`, `advml`, `TSAproject`, `kaggle-solutions`) and high-impact synergies to absorb (`dycom` ➔ `dycom-demo`, `edge-tts` ➔ `3DAang`/`llmaas`, `token-audit` ➔ `gambit`, `AvatarLink` ➔ `3DAang`).
+
+
 
 ### 1. ♘ Knight 1: `dycom-demo` — Smart Diagnostic Annotator & Hazard Radar
 - **Repository:** `/home/user/Desktop/Chingiz/dycom-demo`

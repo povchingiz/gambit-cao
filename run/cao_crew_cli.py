@@ -158,6 +158,7 @@ The entire fleet compressed into 3 primary autonomous actions:
    crew test --audit-only   Audit only (skips repair sandbox)
 
 Lifecycle & Management:
+   crew harness <cmd>       Kernel-secured Linux Landlock sandbox execution & secret stripping
    crew stop                Cleanly terminate background workers, panes and daemon
    crew doctor              Pre-flight diagnostics and configuration wizard
    crew evolve <worker>     Protected prompt self-evolution loop
@@ -213,6 +214,9 @@ def main():
 
     elif cmd in ("repair", "fix"):
         sys.exit(forward_to_script("cao-repair", rest))
+
+    elif cmd in ("harness", "jail"):
+        sys.exit(forward_to_script("gambit-harness", rest))
 
     elif cmd == "sandbox":
         sys.exit(forward_to_script("cao-sandbox", rest))

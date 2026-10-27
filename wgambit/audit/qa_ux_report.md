@@ -1,11 +1,11 @@
 # Playwright Autonomous QA & UI/UX Ergonomics Report
 
-- **Target:** `/home/user/Desktop/Chingiz/dycom-demo/web/ru.html` (`file:///home/user/Desktop/Chingiz/dycom-demo/web/ru.html`)
-- **Page Title:** Сегментация КЛКТ — автоматическая разметка челюстей, зубов и каналов — 2 снимка, совпадение с totalsegmentator · 0.8056
-- **Status:** **WARN** (Health Score: **80/100**)
+- **Target:** `/home/user/Desktop/Chingiz/dycom-demo/web/index.html` (`file:///home/user/Desktop/Chingiz/dycom-demo/web/index.html`)
+- **Page Title:** CBCT segmentation — automatic mapping of jaws, teeth and nerve canals — 2 scans, agreement with totalsegmentator · 0.8056
+- **Status:** **PASS** (Health Score: **100/100**)
 - **Browser Engine:** `/usr/bin/google-chrome`
-- **Audit Duration:** `25.71s`
-- **Timestamp:** `2026-10-22T19:21:16.024021+00:00`
+- **Audit Duration:** `27.91s`
+- **Timestamp:** `2026-10-23T07:26:55.194937+00:00`
 
 ## 1. Executive Summary
 
@@ -13,12 +13,12 @@
 |---|---|
 | Interactive Controls Discovered | `8` (Clicked: `7`) |
 | Broken Interactions (JS / HTTP 4xx-5xx / Backend Errors) | `0` |
-| Silent Dead Clicks (Zero Effect) | `1` |
+| Silent Dead Clicks (Zero Effect) | `0` |
 | Redundant / Duplicate Control Groups | `0` |
 | Small Hit Targets (`< 24x24 px`) | `0` |
 | Unlabeled Controls (Missing A11y Name) | `0` |
 | Desktop Horizontal Overflow (`1440x900`) | `NO` |
-| Mobile Horizontal Overflow (`390x844`) | `YES` |
+| Mobile Horizontal Overflow (`390x844`) | `NO` |
 | Destructive Actions Safely Skipped | `0` |
 | Forms Smartly Auto-filled | `0` |
 | Dialog / Modal Exploration Cycles | `0` |
@@ -35,11 +35,11 @@ No redundant buttons or duplicate action controls detected.
 
 ## 4. Silent Dead Clicks
 
-- **`label` (Итог):** Zero DOM delta, zero network calls, zero URL/console effect.
+All clicked interactive controls produced observable DOM, URL, network, or state feedback.
 
 ## 5. Ergonomics, Hit Targets & Viewport Overflow
 
-- **Viewport Overflow (mobile `390px`):** Scroll width is `418px` (+`28px` overflow). Offenders: div.tools (right=418px), button#theme-toggle (right=418px)
+All controls meet minimum 24x24px target sizing, have accessible labels, and fit both desktop and mobile viewports.
 
 ## 6. Security, Secrets & CORS Audit
 
@@ -47,5 +47,4 @@ No sensitive credentials, API keys, or insecure wildcard CORS configurations det
 
 ## 7. Actionable UX Simplification & Remediation Plan
 
-1. Control 'Итог' (label) produced zero DOM, network, URL, or state change when clicked. Wire up its handler or remove it.
-2. Fix mobile horizontal overflow (+28px beyond 390px viewport; offenders: div.tools (right=418px), button#theme-toggle (right=418px)).
+- UI is clean, responsive, and free of redundant or dead controls.
