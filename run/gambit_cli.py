@@ -257,6 +257,9 @@ def main():
         else:
             sys.exit(forward_to_script("cao-doctor", rest))
 
+    elif cmd in ("render", "avatar"):
+        sys.exit(forward_to_script("gambit_render.py", rest))
+
     elif cmd in ("migrate", "patch"):
         sys.exit(forward_to_script("gambit-migrate", rest))
 

@@ -218,6 +218,9 @@ def main():
     elif cmd in ("harness", "jail"):
         sys.exit(forward_to_script("gambit-harness", rest))
 
+    elif cmd in ("render", "avatar"):
+        sys.exit(forward_to_script("gambit_render.py", rest))
+
     elif cmd == "sandbox":
         sys.exit(forward_to_script("cao-sandbox", rest))
 

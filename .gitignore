@@ -34,6 +34,7 @@ htmlcov/
 # CAO runtime sessions & logs
 cao_session/
 *.log
+wgambit/audit/renders/
 
 # opencode local project artifact
 .opencode/
