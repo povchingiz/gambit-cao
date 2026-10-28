@@ -70,3 +70,20 @@ def test_gambit_dash_command_aliasing(monkeypatch):
     assert len(routed) == 1
     assert routed[0][0] == "cao-qa"
     assert routed[0][1] == ["http://localhost:3000"]
+
+
+def test_gambit_contracts_and_brief(capsys, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["gambit", "contracts"])
+    with pytest.raises(SystemExit) as exc:
+        gambit_cli.main()
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "Locked Architecture Contracts" in out
+
+    monkeypatch.setattr(sys, "argv", ["gambit", "brief", "Test mission"])
+    with pytest.raises(SystemExit) as exc2:
+        gambit_cli.main()
+    assert exc2.value.code == 0
+    out2 = capsys.readouterr().out
+    assert "Tripartite Brief Sparring" in out2
+    assert "Test mission" in out2

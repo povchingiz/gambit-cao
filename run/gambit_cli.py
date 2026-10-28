@@ -163,8 +163,10 @@ Commands (both space 'gambit <cmd>' and dash 'gambit-<cmd>' supported):
    gambit fleet               Chessboard status: Knights, Bishops, Pawns & Quotas
    gambit run [--provider P]  Launch The Rook in tmux (providers: claude, agy, codex)
 
-2. NATURAL LANGUAGE MISSIONS:
+2. NATURAL LANGUAGE MISSIONS & ARCHITECTURE BRIEFS:
    gambit "<mission>"         Natural language cross-project mission dispatch
+   gambit brief "<idea>"      Tripartite Brief Sparring (Rook <-> Architect) before coding
+   gambit contracts           Display locked interface contracts (wgambit/contracts/)
    gambit auto "<goal>"       Headless DAG autonomous execution
 
 3. FULL-STACK QA-UIX + AUTO-REPAIR:
@@ -259,6 +261,30 @@ def main():
 
     elif cmd in ("render", "avatar"):
         sys.exit(forward_to_script("gambit_render.py", rest))
+
+    elif cmd in ("brief", "sparring"):
+        goal = " ".join(rest) if rest else "General Architecture & 12-Factor Contract"
+        contracts_dir = REPO / "wgambit" / "contracts"
+        contracts_dir.mkdir(parents=True, exist_ok=True)
+        brief_file = contracts_dir / "brief.md"
+        template_file = contracts_dir / "brief.template.md"
+        active_file = brief_file if brief_file.exists() else template_file
+        print(f"♜ Initiating Tripartite Brief Sparring (The Rook <-> Bishop Architect)...")
+        print(f"🎯 Mission Intent: {goal}")
+        print(f"📄 Target Contract File: {active_file}")
+        if active_file.exists():
+            print("\n" + "═" * 72)
+            print(active_file.read_text(encoding="utf-8", errors="ignore"))
+            print("═" * 72)
+        sys.exit(0)
+
+    elif cmd in ("contracts", "contract"):
+        contracts_dir = REPO / "wgambit" / "contracts"
+        contracts = list(contracts_dir.glob("*")) if contracts_dir.exists() else []
+        print(f"♜ Locked Architecture Contracts ({len(contracts)} files in {contracts_dir}):")
+        for c in sorted(contracts):
+            print(f"   • {c.name} ({c.stat().st_size} bytes)")
+        sys.exit(0)
 
     elif cmd in ("plugins", "skills"):
         sys.exit(forward_to_script("cao-plugins", rest))

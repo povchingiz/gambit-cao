@@ -5,7 +5,7 @@
 [![Interactive Deck](https://img.shields.io/badge/Presentation%20Deck-16%20Slides-6366f1?style=flat-square&logo=googleslides&logoColor=white)](https://povchingiz.github.io/cao-crew/)
 [![Sequence Diagram](https://img.shields.io/badge/Architecture-Sequence%20Diagram-06b6d4?style=flat-square&logo=diagramsdotnet&logoColor=white)](https://povchingiz.github.io/cao-crew/#16)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-103%20Passing-emerald)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-104%20Passing-emerald)](tests/)
 
 ---
 
@@ -92,6 +92,8 @@ All commands support both **space syntax** (`gambit <cmd>`) and **dash syntax** 
 | `gambit` | `gambit` | `cao-supervisor` | **The Rook Master Terminal:** attaches directly to the active Rook supervisor in tmux, or displays the active Chessboard if idle. |
 | `gambit fleet` | `gambit-fleet` | `crew fleet` / `cao-fleet` | **Chessboard & Fleet Conductor:** live status of Stationed Knights (projects), active missions, token spend, and provider quotas. |
 | `gambit "<mission>"` | `gambit auto "<m>"` | `crew auto` / `cao-auto` | **Natural Language Cross-Project Mission:** parses goals, plans tasks in DAGs, enforces file locks, watches quotas, and self-heals regressions. |
+| `gambit brief "<idea>"` | `gambit brief` | — | **Tripartite Brief Sparring (Phase 1):** triggers adversarial sparring between The Rook and Bishop Architect to freeze 12-factor contracts before coding. |
+| `gambit contracts` | `gambit-contracts` | — | **Locked Architecture Contracts:** displays and validates all frozen interface schemas and briefs in `wgambit/contracts/`. |
 | `gambit test <target>` | `gambit-test` | `crew test` / `cao-qa` | **5-Vector Full-Stack QA-UIX Engine:** Playwright crawler testing DOM ergonomics, JS console telemetry, backend payloads, CORS headers, and secret leaks. |
 | `gambit repair <target>` | `gambit-repair` | `crew repair` / `cao-repair` | **1000x Autonomous Closed-Loop Self-Repair:** spins up an isolated git worktree sandbox (`.git/worktrees/`), diagnoses failure, implements patch, verifies, and squash-merges. |
 | `gambit render <prompt>` | `gambit-render` | `cao-render` | **Frontier 3D Avatar & Video Rendering:** Tencent HunyuanVideo-Avatar (13B MM-DiT) batch rendering + Jamie Pine's Voicebox / Kokoro neural voice sync + ARKit 52 visemes + FFmpeg packaging. |
