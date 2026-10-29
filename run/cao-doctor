@@ -55,8 +55,12 @@ command -v tmux >/dev/null 2>&1 && ok "tmux present" || bad "tmux missing (CAO's
 # The cao-* tools on PATH should be THIS repo's scripts (bootstrap symlinks them).
 # A stale copy (from an older `cp`-based install) silently runs old behavior —
 # catch that here instead of leaving you puzzled why a new flag "doesn't work".
-for tool in cao-run cao-doctor cao-stop cao-tokens cao-plugins cao-limits cao-monitor cao-aggressive cao-auto cao-plan cao-memory cao-config cao-update cao-laya cao-fleet cao-sandbox cao-qa; do
+for tool in gambit gambit-run gambit-doctor gambit-stop gambit-tokens gambit-plugins gambit-limits gambit-monitor gambit-aggressive gambit-auto gambit-plan gambit-memory gambit-config gambit-update gambit-laya gambit-fleet gambit-sandbox gambit-qa gambit-harness gambit-migrate; do
   onpath="$(command -v "$tool" 2>/dev/null)" || { wrn "$tool not on PATH (run bootstrap.sh)"; continue; }
+  if [ ! -e "$RUN_DIR/$tool" ]; then
+    [ -x "$onpath" ] && [ -e "$onpath" ] || wrn "$tool on PATH does not resolve ($onpath)"
+    continue  # no repo source to compare against
+  fi
   if [ "$onpath" -ef "$RUN_DIR/$tool" ]; then
     :  # same file (symlink or direct) — fresh
   elif diff -q "$onpath" "$RUN_DIR/$tool" >/dev/null 2>&1; then

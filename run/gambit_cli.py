@@ -96,7 +96,7 @@ def show_chessboard_status(args: List[str]) -> int:
             print("   • ♝ Bishop Claude:   READY      | Flat-rate subscription available")
         # Codex (Bishop)
         if lr.codex:
-            cx_status = "BLOCKED" if lr.codex.is_blocked() else "READY"
+            cx_status = "BLOCKED" if hasattr(lr.codex, "is_blocked") and lr.codex.is_blocked() else "READY"
             print(f"   • ♝ Bishop Codex:    {cx_status:10s} | Available")
         else:
             print("   • ♝ Bishop Codex:    READY      | Available")

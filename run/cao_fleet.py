@@ -18,15 +18,8 @@ if str(HERE) not in os.sys.path:
 from cao_laya_router import LayaRouter
 from cao_lib import resolve_workspace_dir
 
-DEFAULT_PROJECTS = {
-    "gambit": Path("/home/user/Desktop/Chingiz/cao-crew"),
-    "llmaas": Path("/home/user/Desktop/Chingiz/llmaas"),
-    "dycom-demo": Path("/home/user/Desktop/Chingiz/dycom-demo"),
-    "3DAang": Path("/home/user/Desktop/Maksat/3DAang"),
-    "content-factory": Path("/home/user/Desktop/Chingiz/content-factory"),
-    "call-copilot": Path("/home/user/Desktop/Chingiz/call-copilot"),
-    "video-director": Path("/home/user/Desktop/Chingiz/video-director"),
-}
+# Projects are registered per machine in ~/.cao/fleet_projects.json.
+DEFAULT_PROJECTS: Dict[str, Path] = {}
 
 
 def get_fleet_config_path() -> Path:
