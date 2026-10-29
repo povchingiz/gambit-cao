@@ -2,8 +2,8 @@
 
 > **Orchestrate your frontier AI coding CLI engines into an autonomous, self-evolving engineering fleet — powered by CAO Architecture.**
 
-[![Interactive Deck](https://img.shields.io/badge/Presentation%20Deck-16%20Slides-6366f1?style=flat-square&logo=googleslides&logoColor=white)](https://povchingiz.github.io/cao-crew/)
-[![Sequence Diagram](https://img.shields.io/badge/Architecture-Sequence%20Diagram-06b6d4?style=flat-square&logo=diagramsdotnet&logoColor=white)](https://povchingiz.github.io/cao-crew/#16)
+[![Interactive Deck](https://img.shields.io/badge/Presentation%20Deck-16%20Slides-6366f1?style=flat-square&logo=googleslides&logoColor=white)](https://povchingiz.github.io/gambit-cao/)
+[![Sequence Diagram](https://img.shields.io/badge/Architecture-Sequence%20Diagram-06b6d4?style=flat-square&logo=diagramsdotnet&logoColor=white)](https://povchingiz.github.io/gambit-cao/#16)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/Tests-104%20Passing-emerald)](tests/)
 
@@ -72,8 +72,8 @@ git clone https://github.com/povchingiz/gambit-cao.git ~/gambit-cao && cd ~/gamb
 * 🔌 **[Cross-Engine Skills & Everything Claude Code (`gambit plugins`)](#cross-engine-skills-mcp--everything-claude-code-ecc-integration-gambit-plugins)** — broadcast skills & ECC to all engines
 * 🧬 **[Protected Prompt Self-Evolution (`gambit evolve`)](#protected-prompt-self-evolution-gambit-evolve)** — Dual-Gate prompt optimization & regression protection
 * 🤖 **[AI Assistant Onboarding](#-first-time-let-your-ai-assistant-guide-you)** — ask your AI agent to set up gambit automatically (`AGENTS.md` standard)
-* 🌐 **[Interactive Slides](https://povchingiz.github.io/cao-crew/)** — 16 bilingual slides (RU/EN), dark/light mode, and rival benchmarks
-* 🔄 **[Execution Sequence Diagram](https://povchingiz.github.io/cao-crew/#16)** — native visual trace from North Star goal to verified commit
+* 🌐 **[Interactive Slides](https://povchingiz.github.io/gambit-cao/)** — 16 bilingual slides (RU/EN), dark/light mode, and rival benchmarks
+* 🔄 **[Execution Sequence Diagram](https://povchingiz.github.io/gambit-cao/#16)** — native visual trace from North Star goal to verified commit
 * ⚠️ **[The Problem](#the-problem)** — 6 fatal flaws of single-agent and uncoordinated coding
 * 🧩 **[The Solution](#the-solution-a-unified-engineering-squad)** — specialist workforce, economic asymmetry, and DAG execution
 * 🚀 **[Installation & Setup](#1-install-once)** — 5-minute bootstrap and configuration
@@ -91,7 +91,7 @@ All commands support both **space syntax** (`gambit <cmd>`) and **dash syntax** 
 |---|---|---|---|
 | `gambit` | `gambit` | `cao-supervisor` | **The Rook Master Terminal:** attaches directly to the active Rook supervisor in tmux, or displays the active Chessboard if idle. |
 | `gambit fleet` | `gambit-fleet` | `crew fleet` / `cao-fleet` | **Chessboard & Fleet Conductor:** live status of Stationed Knights (projects), active missions, token spend, and provider quotas. |
-| `gambit "<mission>"` | `gambit auto "<m>"` | `crew auto` / `cao-auto` | **Natural Language Cross-Project Mission:** parses goals, plans tasks in DAGs, enforces file locks, watches quotas, and self-heals regressions. |
+| `gambit "<mission>"` | `gambit auto "<m>"` | `crew auto` / `gambit auto` | **Natural Language Cross-Project Mission:** parses goals, plans tasks in DAGs, enforces file locks, watches quotas, and self-heals regressions. |
 | `gambit brief "<idea>"` | `gambit brief` | — | **Tripartite Brief Sparring (Phase 1):** triggers adversarial sparring between The Rook and Bishop Architect to freeze 12-factor contracts before coding. |
 | `gambit contracts` | `gambit-contracts` | — | **Locked Architecture Contracts:** displays and validates all frozen interface schemas and briefs in `wgambit/contracts/`. |
 | `gambit test <target>` | `gambit-test` | `crew test` / `cao-qa` | **5-Vector Full-Stack QA-UIX Engine:** Playwright crawler testing DOM ergonomics, JS console telemetry, backend payloads, CORS headers, and secret leaks. |
@@ -101,12 +101,12 @@ All commands support both **space syntax** (`gambit <cmd>`) and **dash syntax** 
 | `gambit plugins` | `gambit-plugins` | `cao-plugins` | **Cross-Engine Skills & MCP Broadcaster:** distributes Claude plugins, MCP servers, and **Everything Claude Code (ECC)** skills to all engines (`codex`, `agy`, `opencode`, `copilot`). |
 | `gambit sandbox <action>` | `gambit-sandbox` | `crew sandbox` / `cao-sandbox` | **Ephemeral Git Sandboxes:** manages isolated git worktrees (`create`, `test`, `merge`, `list`, `destroy`) for zero-risk multi-agent coding. |
 | `gambit evolve <worker>` | `gambit-evolve` | `crew evolve` / `cao-evolve` | **Protected Prompt Self-Evolution Loop:** benchmarks mutated prompts with Dual-Gate (Quality + Anti-Bloat) harness and automatic golden rollback. |
-| `gambit memory <cmd>` | `gambit-memory` | `cao-memory` | **Hermes Continuous Learning System:** SQLite BM25 FTS5 episodic storage (`store`, `recall`, `list`) injected before worker dispatch. |
-| `gambit run` | `gambit-run` | `crew run` / `cao-run` | **Launch The Rook:** boots the master conversational supervisor pane in tmux (`--provider agy/claude/codex`). |
+| `gambit memory <cmd>` | `gambit-memory` | `gambit memory` | **Hermes Continuous Learning System:** SQLite BM25 FTS5 episodic storage (`store`, `recall`, `list`) injected before worker dispatch. |
+| `gambit run` | `gambit-run` | `crew run` / `gambit run` | **Launch The Rook:** boots the master conversational supervisor pane in tmux (`--provider agy/claude/codex`). |
 | `gambit terminal` | — | `tmux attach` | **Supervisor Terminal:** attaches directly to the active interactive supervisor session (`tmux attach -t cao-supervisor`). |
-| `gambit stop` | `gambit-stop` | `crew stop` / `cao-stop` | **Clean Board Termination:** halts all background Knights, Daemons, and Rook sessions cleanly (`--keep-server` to keep daemon running). |
-| `gambit doctor` | `gambit-doctor` | `crew doctor` / `cao-doctor` | **Pre-Flight Diagnostics:** validates binaries, daemon ports, CLI logins, and API endpoints (`--init` for setup wizard, `--update` for updater). |
-| `gambit tokens` | `gambit-tokens` | `cao-tokens` | **TokenMaster Efficiency Scraper:** extracts token spend and cost per engine across local JSONL/SQLite stores. |
+| `gambit stop` | `gambit-stop` | `crew stop` / `gambit stop` | **Clean Board Termination:** halts all background Knights, Daemons, and Rook sessions cleanly (`--keep-server` to keep daemon running). |
+| `gambit doctor` | `gambit-doctor` | `crew doctor` / `gambit doctor` | **Pre-Flight Diagnostics:** validates binaries, daemon ports, CLI logins, and API endpoints (`--init` for setup wizard, `--update` for updater). |
+| `gambit tokens` | `gambit-tokens` | `gambit tokens` | **TokenMaster Efficiency Scraper:** extracts token spend and cost per engine across local JSONL/SQLite stores. |
 | `gambit migrate` | `gambit-migrate` | — | **Workspace Migration:** automatically checks and migrates legacy `wcao/` workspaces to canonical `wgambit/` with backward-compatible symlinks. |
 
 ---
@@ -116,12 +116,12 @@ All commands support both **space syntax** (`gambit <cmd>`) and **dash syntax** 
 If you are using **Cursor, Claude Code, OpenAI Codex, Windsurf, GitHub Copilot, or Google Antigravity**, you don't need to configure everything manually. This repository includes universal cross-agent instructions in [`AGENTS.md`](AGENTS.md), [`CLAUDE.md`](CLAUDE.md), and [`.cursorrules`](.cursorrules).
 
 Just open this repository in your IDE or terminal and prompt your AI assistant:
-> *"Help me set up cao-crew and check my environment"*
+> *"Help me set up gambit-cao and check my environment"*
 
 Your AI assistant will automatically:
-1. Run `run/cao-doctor` to test your local tools, daemon port, and existing CLI logins.
+1. Run `run/gambit doctor` to test your local tools, daemon port, and existing CLI logins.
 2. If any CLI is unauthenticated, give you the exact terminal command (`claude /login`, `codex login`, etc.).
-3. Explain how to launch either an interactive Tech Lead team (`run/cao-run`) or autonomous DAG tasks (`run/cao-auto`).
+3. Explain how to launch either an interactive Tech Lead team (`run/gambit run`) or autonomous DAG tasks (`run/gambit auto`).
 
 > [!NOTE]
 > **Origins & Lineage:** This project originated as an automated setup and configuration harness for AWS Labs' open-source [`cli-agent-orchestrator`](https://github.com/awslabs/cli-agent-orchestrator) (CAO). It has since expanded significantly beyond the original launcher into an autonomous multi-engine platform—adding the **`wcao/` project standard**, **Hermes episodic & procedural memory**, **proactive TokenMaster quota intelligence**, **headless DAG execution (`cao_auto`)**, and **anti-tamper self-healing audit gates**.
@@ -175,16 +175,16 @@ gambit run  →  The Rook (Claude / AGY Master Supervisor)  →  assign  →
 **Why it saves tokens:** the expensive model (Claude) is spent only on design,
 contracts, and coordination. Reading a big repo goes to the huge-context analyst;
 the bulk of the typing goes to a cheap coding model against Claude's blueprint.
-`cao-tokens` shows you exactly where the tokens went (per day, or cao-only).
+`gambit tokens` shows you exactly where the tokens went (per day, or cao-only).
 
 **Fault-tolerant by default:** if Claude's quota or login is down, the supervisor
-falls back to another engine automatically — `cao-run` never dead-ends (see
+falls back to another engine automatically — `gambit run` never dead-ends (see
 *Supervisor fallback*).
 
 Roles above are the **defaults** — every one is editable (see *Configure*).
 
 > **Windows:** not supported natively (CAO needs tmux + POSIX ptys). Use WSL2 —
-> see [WINDOWS.md](wcao/docs/WINDOWS.md). Inside WSL these steps apply unchanged, if the
+> see [WINDOWS.md](wgambit/docs/WINDOWS.md). Inside WSL these steps apply unchanged, if the
 > repo lives in your WSL home (not `/mnt/c`).
 
 ## Repo layout — by lifecycle phase
@@ -361,7 +361,7 @@ cp .env.example .env               # set LOCAL_API_KEY (bulk-worker endpoint key
 `./install.sh` is the **recommended one-command installer**: it runs the bootstrap
 installer, walks you through the interactive onboarding and native CLI logins
 (`claude`, `codex`, `agy`, `gh auth login`), and finishes with the pre-flight
-`cao-doctor` check — everything from the section above in a single step.
+`gambit doctor` check — everything from the section above in a single step.
 
 Flags: `--inherit-mcp` (give your existing Claude MCP servers to the workers),
 `--with-kodeks` (dev standard — read its section first), `--with-guard-hook`.
@@ -371,20 +371,20 @@ Prerequisites: macOS needs [Homebrew](https://brew.sh); Linux needs `sudo` (for
 
 ### Upgrades & Existing Tenant Updates
 
-Already have cao-crew installed? Update with one command:
+Already have gambit-cao installed? Update with one command:
 
 ```sh
-cao-update              # or: ./update.sh
+gambit doctor --update              # or: ./update.sh
 ```
 
-`cao-update` (a thin wrapper around `./update.sh` → `run/cao-update`) keeps an
+`gambit doctor --update` (a thin wrapper around `./update.sh` → `run/gambit doctor --update`) keeps an
 existing install current:
 
 1. **Pulls the latest code** (`git pull --ff-only`; skips safely if you have local changes).
 2. **Re-applies site-packages patches** that `cao update` silently wipes (e.g. the `wait_for_shell` pyte patch).
 3. **Refreshes the `~/.local/bin` symlinks** so all `cao-*` helpers point at the new code.
 4. **Re-renders configs and re-registers worker profiles** (`./setup/3_apply/apply.sh`), then restarts the daemon.
-5. **Runs the pre-flight `cao-doctor` check** to verify health.
+5. **Runs the pre-flight `gambit doctor` check** to verify health.
 
 Every step is idempotent — safe to re-run at any time. Flags:
 - `--full` — also update the worker CLIs (claude, codex, opencode) via npm.
@@ -392,7 +392,7 @@ Every step is idempotent — safe to re-run at any time. Flags:
 - `-y` — auto-confirm prompts (non-interactive).
 
 After running `cao update` (the upstream AWS CLI's own updater), re-run
-`cao-update` — it restores the patches that upstream update erases.
+`gambit doctor --update` — it restores the patches that upstream update erases.
 
 ### Native CLI Authentication (Pre-Flight Terminal Logins)
 
@@ -455,14 +455,14 @@ After any edit: `./setup/3_apply/apply.sh`.
 ## 4. Run
 
 ```sh
-cao-run
+gambit run
 ```
 
-First it runs a **pre-flight health check** (`cao-doctor`) — verifies the
+First it runs a **pre-flight health check** (`gambit doctor`) — verifies the
 toolchain, worker binaries, logins, and that the bulk endpoint answers, so a
 worker can't fail silently mid-task. A missing binary aborts the launch;
 warnings (e.g. an unconfigured endpoint) don't. Run it any time with
-`cao-doctor`, or skip the gate with `cao-run --skip-check`.
+`gambit doctor`, or skip the gate with `gambit run --skip-check`.
 
 Then it launches the daemon if needed and attaches you to the supervisor (tmux
 session `cao-supervisor`). Delegate by talking to it. You can detach (`Ctrl-b
@@ -477,18 +477,18 @@ terminal. Reattach with `tmux attach -t cao-supervisor`.
 ### Supervisor fallback (when Claude's quota runs out)
 
 The supervisor defaults to `claude_code`. If your Claude quota is exhausted or
-your login expires, `cao-run` no longer dead-ends — it picks the supervisor
+your login expires, `gambit run` no longer dead-ends — it picks the supervisor
 engine in this priority:
 
 1. **`CAO_SUPERVISOR_PROVIDER`** env var — explicit override, always wins:
    ```sh
-   CAO_SUPERVISOR_PROVIDER=antigravity_cli cao-run
+   CAO_SUPERVISOR_PROVIDER=antigravity_cli gambit run
    ```
-2. **Fallback hint** — `cao-doctor` writes `~/.cao/supervisor_provider` when it
+2. **Fallback hint** — `gambit doctor` writes `~/.cao/supervisor_provider` when it
    sees Claude logged out, and clears it when Claude works again.
 3. **`claude_code`** default.
 
-On top of that, when the primary is `claude_code`, `cao-run` **auto-retries once
+On top of that, when the primary is `claude_code`, `gambit run` **auto-retries once
 on a fallback engine if the launch itself fails** — this catches a burned quota,
 which isn't visible any earlier (`claude auth status` reports login, not quota).
 Fallback order: `CAO_FALLBACK_PROVIDER` env > `antigravity_cli` (if `agy`
@@ -498,12 +498,12 @@ present) > `codex`. Any registered worker engine works as the value.
 you shut down explicitly:
 
 ```sh
-cao-stop              # kill all cao- tmux sessions + the daemon (end of day)
-cao-stop --workers    # kill workers only, keep the supervisor + daemon up
-cao-stop --keep-server / -k   # kill the sessions, leave the daemon running
+gambit stop              # kill all cao- tmux sessions + the daemon (end of day)
+gambit stop --workers    # kill workers only, keep the supervisor + daemon up
+gambit stop --keep-server / -k   # kill the sessions, leave the daemon running
 ```
 
-**Check usage.** `cao-tokens` scrapes each CLI's local store (`~/.claude` jsonl,
+**Check usage.** `gambit tokens` scrapes each CLI's local store (`~/.claude` jsonl,
 `~/.codex` + opencode sqlite) — no billing API. By **default it shows a claude
 heatmap plus a per-day table across all engines, last 7 days, cao-only** — one
 column per engine, each cell `input/output` (compact: `2.2k/670.5k`):
@@ -523,29 +523,29 @@ date          claude(in/out)   ~codex  ~opencode(in/out)      $
   and codex are flat-rate. `agy`/gemini keeps no local log (Google server-side).
 
 ```sh
-cao-tokens                # DEFAULT: heatmap + per-day, all engines, 7 days, cao-only
-cao-tokens --since 2w     # widen the window (24h / 7d / 2w / 3d ...)
-cao-tokens --lifetime     # lifetime per-engine table (all history)
-cao-tokens --day 2026-09-17   # one specific date (YYYY-MM-DD)
-cao-tokens --claude       # per-day CLAUDE only (input/output/cache detail)
-cao-tokens --heatmap      # claude output heatmap only
-cao-tokens -x             # extended: heatmap + claude daily + lifetime table
-cao-tokens --all-sessions # include non-cao claude sessions too
-cao-tokens --json         # machine-readable form of the selected view
+gambit tokens                # DEFAULT: heatmap + per-day, all engines, 7 days, cao-only
+gambit tokens --since 2w     # widen the window (24h / 7d / 2w / 3d ...)
+gambit tokens --lifetime     # lifetime per-engine table (all history)
+gambit tokens --day 2026-09-17   # one specific date (YYYY-MM-DD)
+gambit tokens --claude       # per-day CLAUDE only (input/output/cache detail)
+gambit tokens --heatmap      # claude output heatmap only
+gambit tokens -x             # extended: heatmap + claude daily + lifetime table
+gambit tokens --all-sessions # include non-cao claude sessions too
+gambit tokens --json         # machine-readable form of the selected view
 ```
 
 **Design first for big work.** For a new project or a large feature the
 supervisor acts as architect: it discusses the system with you, writes a Mermaid
-sequence/flow diagram to `wcao/design/`, and gets your approval before
+sequence/flow diagram to `wgambit/design/`, and gets your approval before
 any code is delegated — the diagram is the contract the workers build against.
 Small changes skip this and go straight to delegation. The diagram is a living
 document: it's referenced and edited across sessions, not redrawn each time.
 
-**Single Source of Truth (`wcao/`).** All project-level plans, contracts, and knowledge live in `wcao/`:
+**Single Source of Truth (`wgambit/`).** All project-level plans, contracts, and knowledge live in `wcao/`:
 - `wgambit/plans/now.md` — Active plan, North Star objective, and latest checkpoint.
 - `wgambit/tasks.json` — Directed Acyclic Graph (DAG) of tasks with dependencies and file locks.
-- `wcao/design/*.mmd` — Architecture and sequence diagrams.
-- `wcao/skills/*.md` — Procedural memory (rules, workflows, tool gotchas).
+- `wgambit/design/*.mmd` — Architecture and sequence diagrams.
+- `wgambit/skills/*.md` — Procedural memory (rules, workflows, tool gotchas).
 - `wgambit/audit/` — Postflight audit reports (`aggressive-audit.md`), threat analysis (`weaknesses.md`), and executable load/stress harness (`stress-test.sh`).
 - `wgambit/memory.sqlite` — Local episodic memory database with BM25 FTS5 full-text search (gitignored).
 
@@ -557,22 +557,22 @@ document: it's referenced and edited across sessions, not redrawn each time.
 gambit auto --tasks wgambit/tasks.json --max-workers 4
 ```
 
-1. **Autonomous Planning (`cao-plan`)**: Decomposes a high-level goal into an acyclic DAG (`wgambit/tasks.json`) with TokenMaster model routing and contract specification.
+1. **Autonomous Planning (`gambit plan`)**: Decomposes a high-level goal into an acyclic DAG (`wgambit/tasks.json`) with TokenMaster model routing and contract specification.
 2. **DAG Scheduling & File Locks**: Evaluates `depends_on` relationships and prevents concurrent workers from touching overlapping `files`, ensuring zero merge conflicts or race conditions.
 3. **Proactive TokenMaster Quota Control**: Reads live quota utilization via `cao_limits`. If quota exceeds the 80% watermark or is blocked, it proactively reassigns tasks to `hermes_worker` or `coder_worker` before hitting rate limits.
 4. **Anti-Test-Tampering Gate (`cao_tamper.py`)**: During postflight audit, inspects git diffs to ensure workers have not weakened assertions, inserted bypasses (`assert True`), or deleted test functions. Automatically reverts tampered tests and forces fixes in production code.
 5. **Architect Escalation Protocol**: If a bulk implementation worker fails to fix an audit blocker on attempt 1, self-healing automatically escalates attempt 2+ to an Architect/Reasoning engine (`hermes_worker` or `claude_worker`) for root-cause diagnosis.
-6. **5-Vector Audit & Auto-Generated Stress Testing (`cao-aggressive`)**: Runs AST compilation across all files, high-entropy secrets scanning, and test suites. Automatically generates an executable load/stress test harness (`wcao/audit/stress-test.sh`) to stress concurrency bursts, CLI arguments, and process stability (see [Audit & Stress-Testing Docs](wcao/docs/AUDIT_AND_STRESS_TESTING.md)).
+6. **5-Vector Audit & Auto-Generated Stress Testing (`cao-aggressive`)**: Runs AST compilation across all files, high-entropy secrets scanning, and test suites. Automatically generates an executable load/stress test harness (`wgambit/audit/stress-test.sh`) to stress concurrency bursts, CLI arguments, and process stability (see [Audit & Stress-Testing Docs](wgambit/docs/AUDIT_AND_STRESS_TESTING.md)).
 
 ## Hermes Learning & Memory System
 
 CAO incorporates the **Hermes Continuous Learning** architecture across all engines:
 
-1. **Episodic Memory (`cao-memory`)**:
+1. **Episodic Memory (`gambit memory`)**:
    Powered by SQLite with FTS5 and BM25 ranking. Stores context, past solutions, and debugging outcomes.
-   - `cao-memory store <category> <summary> [details]`
-   - `cao-memory recall <query> [-n 5]`
-   - `cao-memory list [--category <cat>]`
+   - `gambit memory store <category> <summary> [details]`
+   - `gambit memory recall <query> [-n 5]`
+   - `gambit memory list [--category <cat>]`
    Before any task is dispatched, `cao_auto` automatically searches episodic memory and injects relevant historical lessons directly into the worker's prompt.
 2. **Procedural Memory (`wgambit/skills/`)**:
    Reusable behavioral and debugging recipes saved as Markdown files in `wgambit/skills/`, shared across all worker engines.
@@ -664,7 +664,7 @@ it as `{env:LOCAL_API_KEY}`). Endpoint URL and model ids are not secret.
 
 ## After `cao update`
 
-Re-run `cao-update` (or `./update.sh`, or `./setup/1_install/bootstrap.sh`) — it
+Re-run `gambit doctor --update` (or `./update.sh`, or `./setup/1_install/bootstrap.sh`) — it
 re-applies the pyte patch (which lives in the CAO venv and is lost on
 reinstall). Idempotent.
 
@@ -688,7 +688,7 @@ Both are off unless you pass the flag.
 If a user hands you this repo and says *connect everything*, do this in order —
 stop at each 🔸 (needs a human):
 
-1. Confirm OS is macOS/Linux (Windows → tell them WSL2 per `wcao/docs/WINDOWS.md`, stop).
+1. Confirm OS is macOS/Linux (Windows → tell them WSL2 per `wgambit/docs/WINDOWS.md`, stop).
 2. 🔸 Ask for `LOCAL_API_KEY`; `cp .env.example .env` and write it. Never print
    or commit it.
 3. Check `[endpoint]` in `setup/2_configure/cao.config.toml` matches their endpoint.
@@ -696,6 +696,6 @@ stop at each 🔸 (needs a human):
    they ask).
 5. 🔸 Tell them to run the logins themselves: `claude` → `/login`, `codex
    login`, `agy`. You cannot.
-6. Verify: `cao-run`, delegate a trivial task to each worker, confirm replies.
-7. Point them at `cao-run` from any project. Edits go through `setup/2_configure/` +
+6. Verify: `gambit run`, delegate a trivial task to each worker, confirm replies.
+7. Point them at `gambit run` from any project. Edits go through `setup/2_configure/` +
    `./setup/3_apply/apply.sh`, never the live files.
