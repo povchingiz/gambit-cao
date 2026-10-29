@@ -59,7 +59,9 @@
   - Video-to-Avatar Pipeline: keyframe sampling from selfie video, multi-frame landmark stabilization, textured GLB generation.
   - 3-Second Zero-Shot Voice Cloning: speaker acoustic embedding extraction and personalized speech synthesis.
   - WebGL UI Upgrade: upload photo/video & record voice sample buttons in Three.js viewer.
-  - Unit tests in `tests/test_photo_to_avatar.py`, `tests/test_video_to_avatar.py`, `tests/test_voice_cloner.py`.
+  - **Next-Gen Hybrid Roadmap ([`docs/AVATAR_NEXT_GEN_ROADMAP.md`](file:///home/user/Desktop/Maksat/3DAang/docs/AVATAR_NEXT_GEN_ROADMAP.md)):** Dual-Tier architecture integrating **Jamie Pine's Voicebox** (`kokoro-82M`/`F5-TTS` local voice cloning) and **Tencent HunyuanVideo-Avatar** (13B MM-DiT diffusion for offline 4K patient case videos).
+  - **Hybrid Voice Engine (`avatar_engine/hybrid_voice_synthesizer.py`):** Neural Voicebox client with zero-crash automatic fallback to procedural `VoiceCloner`.
+  - 35/35 unit tests passing.
 
 ### 3. ♘ Knight 3: `llmaas` — Real-Time Call Assistant & LLM-CLI Video Editor
 - **Repository:** `/home/user/Desktop/Chingiz/llmaas`
